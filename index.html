@@ -3,54 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BrainRot Money</title>
+    <title>BrainRot Money Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        :root {
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --accent-color: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --gold: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
+            --border: #30363d;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
         }
 
         body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            padding: 16px;
-            padding-bottom: 80px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 12px;
+            padding-bottom: 85px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
+        /* Хедер */
         .header {
             width: 100%;
-            max-width: 400px;
-            background: #1e293b;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 14px 18px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         }
 
-        .header h1 {
-            font-size: 22px;
-            margin-bottom: 8px;
-            color: #38bdf8;
-        }
-
-        .balance {
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
             font-size: 18px;
-            color: #fbbf24;
-            font-weight: bold;
+            color: var(--accent-color);
         }
 
+        .balance-box {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid var(--gold);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 15px;
+        }
+
+        /* Вкладки */
         .tab-content {
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             display: none;
             flex-direction: column;
-            align-items: center;
+            gap: 12px;
         }
 
         .tab-content.active {
@@ -58,349 +83,529 @@
         }
 
         .section-title {
-            width: 100%;
-            font-size: 18px;
-            margin-bottom: 12px;
-            color: #94a3b8;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
         }
 
-        .cases-container {
-            width: 100%;
+        /* Сітка 10 кейсів */
+        .cases-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 12px;
         }
 
         .case-card {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .case-card:active {
+            transform: scale(0.96);
         }
 
         .case-icon {
-            font-size: 48px;
-            margin-bottom: 10px;
+            font-size: 52px;
+            margin: 8px 0;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
         }
 
-        .case-title {
+        .case-name {
             font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #f1f5f9;
+            font-weight: 700;
+            margin-bottom: 4px;
         }
 
         .case-price {
             font-size: 13px;
-            color: #fbbf24;
-            margin-bottom: 12px;
+            color: var(--gold);
+            font-weight: 700;
+            margin-bottom: 10px;
         }
 
-        .open-btn {
-            background-color: #38bdf8;
-            color: #0f172a;
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-weight: bold;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 700;
             font-size: 13px;
             width: 100%;
             cursor: pointer;
+            transition: background 0.2s;
         }
 
-        /* Рулетка / Анімація прокрутки */
-        .roulette-modal {
+        .btn-primary:active {
+            background: var(--accent-hover);
+        }
+
+        /* Інвентар */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .inv-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .inv-icon {
+            font-size: 36px;
+            margin-bottom: 4px;
+        }
+
+        .inv-title {
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .btn-sell {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* Апгрейдер */
+        .upgrade-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 14px;
+        }
+
+        .upgrade-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px dashed var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 10px 0;
+        }
+
+        /* Адмін панель */
+        .admin-card {
+            background: var(--card-bg);
+            border: 1px dashed var(--gold);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .admin-input {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        /* Рулетка Модалка */
+        .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
             justify-content: center;
             align-items: center;
-            z-index: 100;
+            z-index: 200;
         }
 
-        .roulette-box {
-            background: #1e293b;
+        .modal-body {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
             padding: 24px;
-            border-radius: 16px;
-            text-align: center;
+            border-radius: 20px;
             width: 90%;
-            max-width: 350px;
+            max-width: 380px;
+            text-align: center;
         }
 
-        .roulette-window {
+        .roulette-wrapper {
             width: 100%;
-            height: 100px;
-            background: #0f172a;
-            border-radius: 8px;
+            height: 110px;
+            background: var(--bg-color);
+            border: 2px solid var(--accent-color);
+            border-radius: 12px;
             overflow: hidden;
             position: relative;
-            display: flex;
-            align-items: center;
-            margin-bottom: 16px;
-            border: 2px solid #38bdf8;
+            margin: 16px 0;
+        }
+
+        .roulette-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 4px; height: 100%;
+            background: #ef4444;
+            z-index: 10;
         }
 
         .roulette-track {
             display: flex;
             position: absolute;
             left: 0;
-            transition: left 4s cubic-bezier(0.15, 0.85, 0.35, 1);
+            top: 5px;
+            transition: left 4s cubic-bezier(0.1, 0.9, 0.2, 1);
         }
 
-        .roulette-item {
-            min-width: 100px;
-            height: 96px;
+        .roulette-card {
+            min-width: 90px;
+            height: 98px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-right: 6px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            font-size: 32px;
-            background: #334155;
-            margin-right: 4px;
-            border-radius: 6px;
+            justify-content: center;
+            font-size: 30px;
         }
 
-        .roulette-item span {
-            font-size: 11px;
-            color: #fbbf24;
+        .roulette-card span {
+            font-size: 10px;
+            color: var(--text-sub);
             margin-top: 4px;
         }
 
-        /* Апгрейдер та Профіль */
-        .card-box {
-            width: 100%;
-            background: #1e293b;
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .action-btn {
-            background-color: #22c55e;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: bold;
-            width: 100%;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-
-        /* Нижнє навігаційне меню */
+        /* Нижнє Меню */
         .nav-bar {
             position: fixed;
             bottom: 0; left: 0; width: 100%;
-            background: #1e293b;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-around;
             padding: 10px 0;
-            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
-            z-index: 50;
+            z-index: 100;
         }
 
         .nav-item {
             background: none;
             border: none;
-            color: #94a3b8;
-            font-size: 12px;
+            color: var(--text-sub);
+            font-size: 11px;
             display: flex;
             flex-direction: column;
             align-items: center;
             cursor: pointer;
+            gap: 2px;
         }
 
         .nav-item.active {
-            color: #38bdf8;
+            color: var(--accent-color);
+            font-weight: 700;
         }
 
-        .nav-item span {
+        .nav-item div {
             font-size: 20px;
-            margin-bottom: 2px;
         }
     </style>
 </head>
 <body>
 
+    <!-- Шапка -->
     <div class="header">
-        <h1>🧠 BRAINROT MONEY</h1>
-        <div class="balance">Баланс: 🪙 <span id="balance-value">250</span></div>
+        <div class="brand">🧠 BrainRot</div>
+        <div class="balance-box">🪙 <span id="balance">0</span></div>
     </div>
 
-    <!-- ВКЛАДКА: КЕЙСИ -->
+    <!-- 1. КЕЙСИ (10 ШТУК) -->
     <div id="tab-cases" class="tab-content active">
-        <div class="section-title">📦 Ігрові Кейси</div>
-        <div class="cases-container">
+        <div class="section-title">📦 Кейси (10 видів)</div>
+        <div class="cases-grid">
             <div class="case-card">
                 <div class="case-icon">📦</div>
-                <div class="case-title">Нубік кейс</div>
+                <div class="case-name">Нубік</div>
                 <div class="case-price">🪙 10</div>
-                <button class="open-btn" onclick="startRoulette(10, 'Нубік кейс')">Відкрити</button>
+                <button class="btn-primary" onclick="openCase(10, 'Нубік')">Відкрити</button>
             </div>
             <div class="case-card">
                 <div class="case-icon">🎁</div>
-                <div class="case-title">Про кейс</div>
-                <div class="case-price">🪙 35</div>
-                <button class="open-btn" onclick="startRoulette(35, 'Про кейс')">Відкрити</button>
+                <div class="case-name">Шкільний</div>
+                <div class="case-price">🪙 25</div>
+                <button class="btn-primary" onclick="openCase(25, 'Шкільний')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">🤡</div>
+                <div class="case-name">Клоунський</div>
+                <div class="case-price">🪙 50</div>
+                <button class="btn-primary" onclick="openCase(50, 'Клоунський')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">🗿</div>
+                <div class="case-name">Сигма</div>
+                <div class="case-price">🪙 100</div>
+                <button class="btn-primary" onclick="openCase(100, 'Сигма')">Відкрити</button>
             </div>
             <div class="case-card">
                 <div class="case-icon">💎</div>
-                <div class="case-title">Сигма кейс</div>
-                <div class="case-price">🪙 80</div>
-                <button class="open-btn" onclick="startRoulette(80, 'Сигма кейс')">Відкрити</button>
+                <div class="case-name">Діамантовий</div>
+                <div class="case-price">🪙 200</div>
+                <button class="btn-primary" onclick="openCase(200, 'Діамантовий')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">🔥</div>
+                <div class="case-name">Файер</div>
+                <div class="case-price">🪙 400</div>
+                <button class="btn-primary" onclick="openCase(400, 'Файер')">Відкрити</button>
             </div>
             <div class="case-card">
                 <div class="case-icon">👑</div>
-                <div class="case-title">Легендарний кейс</div>
-                <div class="case-price">🪙 180</div>
-                <button class="open-btn" onclick="startRoulette(180, 'Легендарний кейс')">Відкрити</button>
+                <div class="case-name">Королівський</div>
+                <div class="case-price">🪙 750</div>
+                <button class="btn-primary" onclick="openCase(750, 'Королівський')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">🚀</div>
+                <div class="case-name">Космос</div>
+                <div class="case-price">🪙 1200</div>
+                <button class="btn-primary" onclick="openCase(1200, 'Космос')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">🗿</div>
+                <div class="case-name">GigaChad</div>
+                <div class="case-price">🪙 2500</div>
+                <button class="btn-primary" onclick="openCase(2500, 'GigaChad')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">🌀</div>
+                <div class="case-name">BrainRot Ultra</div>
+                <div class="case-price">🪙 5000</div>
+                <button class="btn-primary" onclick="openCase(5000, 'BrainRot Ultra')">Відкрити</button>
             </div>
         </div>
     </div>
 
-    <!-- ВКЛАДКА: АПГРЕЙДЕР -->
+    <!-- 2. ІНВЕНТАР -->
+    <div id="tab-inventory" class="tab-content">
+        <div class="section-title">🎒 Мій Інвентар</div>
+        <div id="inventory-list" class="inventory-grid">
+            <!-- Предмети будуть тут -->
+        </div>
+    </div>
+
+    <!-- 3. АПГРЕЙДЕР -->
     <div id="tab-upgrade" class="tab-content">
-        <div class="section-title">⚡ Апгрейдер скінів</div>
-        <div class="card-box">
-            <p>Подвой свої монети з шансом 50%!</p>
-            <button class="action-btn" onclick="runUpgrade()">Зробити апгрейд (🪙 50)</button>
+        <div class="section-title">⚡ Апгрейдер Скінів</div>
+        <div class="upgrade-box">
+            <p style="font-size: 13px; color: var(--text-sub);">Ризикни монетами чи предметом для апгрейду!</p>
+            <div class="upgrade-circle" id="upgrade-icon">❓</div>
+            <button class="btn-primary" onclick="startUpgrade(50)">Шанс 50% (Ставка 50 🪙)</button>
+            <button class="btn-primary" style="background: #22c55e;" onclick="startUpgrade(20)">Шанс 80% (Ставка 100 🪙)</button>
         </div>
     </div>
 
-    <!-- ВКЛАДКА: ПРОФІЛЬ -->
-    <div id="tab-profile" class="tab-content">
-        <div class="section-title">👤 Профіль гравця</div>
-        <div class="card-box">
-            <p>Статус: <b>Новичок</b></p>
-            <p style="margin-top: 8px;">Відкрито кейсів: <span id="opened-count">0</span></p>
-        </div>
-    </div>
-
-    <!-- ВКЛАДКА: АДМІНПАНЕЛЬ -->
+    <!-- 4. АДМІН ПАНЕЛЬ -->
     <div id="tab-admin" class="tab-content">
-        <div class="section-title">🛠️ Адмін-панель</div>
-        <div class="card-box">
-            <p>Додати балансу для тесту:</p>
-            <button class="action-btn" onclick="addAdminMoney(100)">+100 монет 🪙</button>
+        <div class="section-title">🛠️ Повноцінна Адмінка</div>
+        <div class="admin-card">
+            <p style="font-size: 13px; font-weight: 700; color: var(--gold);">Видача Балансу:</p>
+            <input type="number" id="admin-coins-input" class="admin-input" placeholder="Введіть кількість монет...">
+            <button class="btn-primary" onclick="adminAddCoins()">Видати Монети 🪙</button>
+            <hr style="border-color: var(--border);">
+            <button class="btn-primary" style="background: #eab308; color: black;" onclick="toggleGodMode()">Режим Нескінченності (God Mode): <span id="godmode-status">OFF</span></button>
+            <button class="btn-primary" style="background: #ef4444;" onclick="resetAccount()">Скинути Акаунт до 0</button>
         </div>
     </div>
 
     <!-- МОДАЛКА РУЛЕТКИ -->
-    <div id="rouletteModal" class="roulette-modal">
-        <div class="roulette-box">
-            <h3 style="margin-bottom: 12px; color: #38bdf8;">Відкриття кейсу...</h3>
-            <div class="roulette-window">
+    <div id="rouletteModal" class="modal">
+        <div class="modal-body">
+            <h3 style="color: var(--accent-color);">Крутимо кейс...</h3>
+            <div class="roulette-wrapper">
                 <div id="rouletteTrack" class="roulette-track"></div>
             </div>
-            <p id="rouletteResult" style="font-weight: bold; color: #fbbf24; min-height: 24px;"></p>
+            <p id="winResult" style="font-weight: 700; color: var(--gold); min-height: 24px;"></p>
         </div>
     </div>
 
-    <!-- НИЖНЯ ПАНЕЛЬ НАВІГАЦІЇ -->
+    <!-- НИЖНЄ МЕНЮ -->
     <div class="nav-bar">
-        <button class="nav-item active" onclick="switchTab('cases', this)"><span>📦</span>Кейси</button>
-        <button class="nav-item" onclick="switchTab('upgrade', this)"><span>⚡</span>Апгрейд</button>
-        <button class="nav-item" onclick="switchTab('profile', this)"><span>👤</span>Профіль</button>
-        <button class="nav-item" onclick="switchTab('admin', this)"><span>🛠️</span>Адмін</button>
+        <button class="nav-item active" onclick="switchTab('cases', this)"><div>📦</div>Кейси</button>
+        <button class="nav-item" onclick="switchTab('inventory', this)"><div>🎒</div>Інвентар</button>
+        <button class="nav-item" onclick="switchTab('upgrade', this)"><div>⚡</div>Апгрейд</button>
+        <button class="nav-item" onclick="switchTab('admin', this)"><div>🛠️</div>Адмінка</button>
     </div>
 
     <script>
-        let balance = 250;
-        let openedCasesCount = 0;
+        let balance = 0;
+        let godMode = false;
+        let inventory = [];
+
+        const dropItems = [
+            { icon: '🥉', name: 'Бронзова Медаль', price: 5 },
+            { icon: '🥈', name: 'Срібна Медаль', price: 20 },
+            { icon: '🥇', name: 'Золота Медаль', price: 60 },
+            { icon: '📱', name: 'Старий Телефон', price: 150 },
+            { icon: '💻', name: 'Ігровий Ноут', price: 500 },
+            { icon: '🚗', name: 'Гелік', price: 1500 },
+            { icon: '🚀', name: 'Ракета', price: 4000 }
+        ];
 
         function updateUI() {
-            document.getElementById('balance-value').innerText = balance;
-            document.getElementById('opened-count').innerText = openedCasesCount;
+            document.getElementById('balance').innerText = godMode ? '∞' : balance;
+            renderInventory();
         }
 
-        function switchTab(tabName, btn) {
+        function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            
-            document.getElementById('tab-' + tabName).classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
             btn.classList.add('active');
         }
 
-        function startRoulette(price, caseName) {
-            if (balance < price) {
-                alert('Недостатньо монет! 🪙❌');
+        function openCase(price, caseName) {
+            if (!godMode && balance < price) {
+                alert('У вас 0 або замало монет! Зайдіть в Адмінку, щоб видати собі монет 🪙');
                 return;
             }
 
-            balance -= price;
-            openedCasesCount++;
+            if (!godMode) balance -= price;
             updateUI();
 
             const modal = document.getElementById('rouletteModal');
             const track = document.getElementById('rouletteTrack');
-            const resultText = document.getElementById('rouletteResult');
-            
+            const resultText = document.getElementById('winResult');
+
             modal.style.display = 'flex';
             resultText.innerText = '';
 
-            // Генеруємо випадкові елементи для рулетки
-            const items = ['🪙 5', '🪙 20', '🪙 50', '🪙 150', '🎁 Шмот', '💎 Донат', '👑 Легендарка', '🔥 Кеш'];
-            let html = '';
-            for (let i = 0; i < 30; i++) {
-                let randomItem = items[Math.floor(Math.random() * items.length)];
-                html += `<div class="roulette-item">${randomItem.split(' ')[0]}<span>${randomItem.split(' ')[1]}</span></div>`;
+            let trackHTML = '';
+            for (let i = 0; i < 35; i++) {
+                let randomDrop = dropItems[Math.floor(Math.random() * dropItems.length)];
+                trackHTML += `<div class="roulette-card">${randomDrop.icon}<span>${randomDrop.name}</span></div>`;
             }
-            track.innerHTML = html;
+            track.innerHTML = trackHTML;
             track.style.transition = 'none';
             track.style.left = '0px';
 
-            // Запускаємо анімацію прокрутки
+            let wonItem = dropItems[Math.floor(Math.random() * dropItems.length)];
+
             setTimeout(() => {
-                track.style.transition = 'left 4s cubic-bezier(0.15, 0.85, 0.35, 1)';
-                let winningOffset = -(15 * 104 - 120); // зупинка на 15-му елементі
-                track.style.left = winningOffset + 'px';
+                track.style.transition = 'left 4s cubic-bezier(0.1, 0.9, 0.2, 1)';
+                track.style.left = '-2100px';
             }, 50);
 
-            // Закриття модалки після анімації
             setTimeout(() => {
-                let winReward = Math.floor(price * (0.8 + Math.random() * 0.8));
-                balance += winReward;
+                inventory.push(wonItem);
                 updateUI();
-                resultText.innerText = `Виграш: +${winReward} монет! 🎉`;
-                
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                }, 2000);
+                resultText.innerText = `Виграно: ${wonItem.icon} ${wonItem.name}!`;
+                setTimeout(() => { modal.style.display = 'none'; }, 2000);
             }, 4200);
         }
 
-        function runUpgrade() {
-            if (balance < 50) {
-                alert('Потрібно мінімум 50 монет для апгрейду!');
+        function renderInventory() {
+            const list = document.getElementById('inventory-list');
+            if (inventory.length === 0) {
+                list.innerHTML = '<p style="grid-column: span 3; color: var(--text-sub); font-size: 13px;">Інвентар порожній 🎒</p>';
                 return;
             }
-            balance -= 50;
-            if (Math.random() > 0.5) {
-                balance += 120;
-                alert('Успіх! Ви виграли 120 монет! 🚀🔥');
-            } else {
-                alert('Невдача, ви втратили 50 монет 😢');
-            }
+            list.innerHTML = inventory.map((item, index) => `
+                <div class="inv-item">
+                    <div class="inv-icon">${item.icon}</div>
+                    <div class="inv-title">${item.name}</div>
+                    <button class="btn-sell" onclick="sellItem(${index})">Продати (${item.price}🪙)</button>
+                </div>
+            `).join('');
+        }
+
+        function sellItem(index) {
+            balance += inventory[index].price;
+            inventory.splice(index, 1);
             updateUI();
         }
 
-        function addAdminMoney(amount) {
-            balance += amount;
+        function startUpgrade(cost) {
+            if (!godMode && balance < cost) {
+                alert('Недостатньо монет для апгрейду!');
+                return;
+            }
+            if (!godMode) balance -= cost;
+
+            const icon = document.getElementById('upgrade-icon');
+            icon.innerText = '🌀';
+            setTimeout(() => {
+                if (Math.random() > 0.4) {
+                    let winCoins = cost * 2;
+                    balance += winCoins;
+                    icon.innerText = '🎉';
+                    alert(`Апгрейд УСПІШНИЙ! +${winCoins} монет 🪙`);
+                } else {
+                    icon.innerText = '💥';
+                    alert('Апгрейд НЕ ВДАВСЯ! 😢');
+                }
+                updateUI();
+            }, 1000);
+        }
+
+        // Адмін функції
+        function adminAddCoins() {
+            const val = parseInt(document.getElementById('admin-coins-input').value);
+            if (isNaN(val)) return alert('Введіть число!');
+            balance += val;
             updateUI();
-            alert(`Адмін додав +${amount} монет! 🪙🛠️`);
+            alert(`Успішно додано ${val} монет! 🪙`);
+        }
+
+        function toggleGodMode() {
+            godMode = !godMode;
+            document.getElementById('godmode-status').innerText = godMode ? 'ON (Нескінченність)' : 'OFF';
+            updateUI();
+        }
+
+        function resetAccount() {
+            balance = 0;
+            inventory = [];
+            godMode = false;
+            document.getElementById('godmode-status').innerText = 'OFF';
+            updateUI();
+            alert('Акаунт скинуто до 0!');
         }
 
         updateUI();
     </script>
-</body>
-</html>
-
 </body>
 </html>
