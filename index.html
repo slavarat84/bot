@@ -16,6 +16,7 @@
             background-color: #0f172a;
             color: #f8fafc;
             padding: 16px;
+            padding-bottom: 80px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -44,9 +45,20 @@
             font-weight: bold;
         }
 
-        .section-title {
+        .tab-content {
             width: 100%;
             max-width: 400px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        .section-title {
+            width: 100%;
             font-size: 18px;
             margin-bottom: 12px;
             color: #94a3b8;
@@ -54,7 +66,6 @@
 
         .cases-container {
             width: 100%;
-            max-width: 400px;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
@@ -69,17 +80,11 @@
             align-items: center;
             text-align: center;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            transition: transform 0.2s;
-        }
-
-        .case-card:active {
-            transform: scale(0.97);
         }
 
         .case-icon {
             font-size: 48px;
             margin-bottom: 10px;
-            text-align: center;
         }
 
         .case-title {
@@ -105,11 +110,120 @@
             font-size: 13px;
             width: 100%;
             cursor: pointer;
-            transition: background 0.2s;
         }
 
-        .open-btn:hover {
-            background-color: #0ea5e9;
+        /* Рулетка / Анімація прокрутки */
+        .roulette-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .roulette-box {
+            background: #1e293b;
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .roulette-window {
+            width: 100%;
+            height: 100px;
+            background: #0f172a;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            border: 2px solid #38bdf8;
+        }
+
+        .roulette-track {
+            display: flex;
+            position: absolute;
+            left: 0;
+            transition: left 4s cubic-bezier(0.15, 0.85, 0.35, 1);
+        }
+
+        .roulette-item {
+            min-width: 100px;
+            height: 96px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            background: #334155;
+            margin-right: 4px;
+            border-radius: 6px;
+        }
+
+        .roulette-item span {
+            font-size: 11px;
+            color: #fbbf24;
+            margin-top: 4px;
+        }
+
+        /* Апгрейдер та Профіль */
+        .card-box {
+            width: 100%;
+            background: #1e293b;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn {
+            background-color: #22c55e;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        /* Нижнє навігаційне меню */
+        .nav-bar {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            background: #1e293b;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 50;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #38bdf8;
+        }
+
+        .nav-item span {
+            font-size: 20px;
+            margin-bottom: 2px;
         }
     </style>
 </head>
@@ -117,58 +231,176 @@
 
     <div class="header">
         <h1>🧠 BRAINROT MONEY</h1>
-        <div class="balance">Баланс: 🪙 <span id="balance-value">180</span></div>
+        <div class="balance">Баланс: 🪙 <span id="balance-value">250</span></div>
     </div>
 
-    <div class="section-title">📦 Ігрові Кейси</div>
+    <!-- ВКЛАДКА: КЕЙСИ -->
+    <div id="tab-cases" class="tab-content active">
+        <div class="section-title">📦 Ігрові Кейси</div>
+        <div class="cases-container">
+            <div class="case-card">
+                <div class="case-icon">📦</div>
+                <div class="case-title">Нубік кейс</div>
+                <div class="case-price">🪙 10</div>
+                <button class="open-btn" onclick="startRoulette(10, 'Нубік кейс')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">🎁</div>
+                <div class="case-title">Про кейс</div>
+                <div class="case-price">🪙 35</div>
+                <button class="open-btn" onclick="startRoulette(35, 'Про кейс')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">💎</div>
+                <div class="case-title">Сигма кейс</div>
+                <div class="case-price">🪙 80</div>
+                <button class="open-btn" onclick="startRoulette(80, 'Сигма кейс')">Відкрити</button>
+            </div>
+            <div class="case-card">
+                <div class="case-icon">👑</div>
+                <div class="case-title">Легендарний кейс</div>
+                <div class="case-price">🪙 180</div>
+                <button class="open-btn" onclick="startRoulette(180, 'Легендарний кейс')">Відкрити</button>
+            </div>
+        </div>
+    </div>
 
-    <div class="cases-container">
-        <!-- Нубік кейс -->
-        <div class="case-card">
-            <div class="case-icon">📦</div>
-            <div class="case-title">Нубік кейс</div>
-            <div class="case-price">🪙 10</div>
-            <button class="open-btn" onclick="openCase(10, 'Нубік кейс')">Відкрити</button>
+    <!-- ВКЛАДКА: АПГРЕЙДЕР -->
+    <div id="tab-upgrade" class="tab-content">
+        <div class="section-title">⚡ Апгрейдер скінів</div>
+        <div class="card-box">
+            <p>Подвой свої монети з шансом 50%!</p>
+            <button class="action-btn" onclick="runUpgrade()">Зробити апгрейд (🪙 50)</button>
         </div>
-        
-        <!-- Про кейс -->
-        <div class="case-card">
-            <div class="case-icon">🎁</div>
-            <div class="case-title">Про кейс</div>
-            <div class="case-price">🪙 35</div>
-            <button class="open-btn" onclick="openCase(35, 'Про кейс')">Відкрити</button>
-        </div>
+    </div>
 
-        <!-- Сигма кейс -->
-        <div class="case-card">
-            <div class="case-icon">💎</div>
-            <div class="case-title">Сигма кейс</div>
-            <div class="case-price">🪙 80</div>
-            <button class="open-btn" onclick="openCase(80, 'Сигма кейс')">Відкрити</button>
+    <!-- ВКЛАДКА: ПРОФІЛЬ -->
+    <div id="tab-profile" class="tab-content">
+        <div class="section-title">👤 Профіль гравця</div>
+        <div class="card-box">
+            <p>Статус: <b>Новичок</b></p>
+            <p style="margin-top: 8px;">Відкрито кейсів: <span id="opened-count">0</span></p>
         </div>
+    </div>
 
-        <!-- Легендарний кейс -->
-        <div class="case-card">
-            <div class="case-icon">👑</div>
-            <div class="case-title">Легендарний кейс</div>
-            <div class="case-price">🪙 180</div>
-            <button class="open-btn" onclick="openCase(180, 'Легендарний кейс')">Відкрити</button>
+    <!-- ВКЛАДКА: АДМІНПАНЕЛЬ -->
+    <div id="tab-admin" class="tab-content">
+        <div class="section-title">🛠️ Адмін-панель</div>
+        <div class="card-box">
+            <p>Додати балансу для тесту:</p>
+            <button class="action-btn" onclick="addAdminMoney(100)">+100 монет 🪙</button>
         </div>
+    </div>
+
+    <!-- МОДАЛКА РУЛЕТКИ -->
+    <div id="rouletteModal" class="roulette-modal">
+        <div class="roulette-box">
+            <h3 style="margin-bottom: 12px; color: #38bdf8;">Відкриття кейсу...</h3>
+            <div class="roulette-window">
+                <div id="rouletteTrack" class="roulette-track"></div>
+            </div>
+            <p id="rouletteResult" style="font-weight: bold; color: #fbbf24; min-height: 24px;"></p>
+        </div>
+    </div>
+
+    <!-- НИЖНЯ ПАНЕЛЬ НАВІГАЦІЇ -->
+    <div class="nav-bar">
+        <button class="nav-item active" onclick="switchTab('cases', this)"><span>📦</span>Кейси</button>
+        <button class="nav-item" onclick="switchTab('upgrade', this)"><span>⚡</span>Апгрейд</button>
+        <button class="nav-item" onclick="switchTab('profile', this)"><span>👤</span>Профіль</button>
+        <button class="nav-item" onclick="switchTab('admin', this)"><span>🛠️</span>Адмін</button>
     </div>
 
     <script>
-        let balance = 180;
+        let balance = 250;
+        let openedCasesCount = 0;
 
-        function openCase(price, caseName) {
-            if (balance >= price) {
-                balance -= price;
-                document.getElementById('balance-value').innerText = balance;
-                alert(`Ви успішно відкрили "${caseName}"! 🎉`);
-            } else {
-                alert('Недостатньо монет на балансі! 🪙❌');
-            }
+        function updateUI() {
+            document.getElementById('balance-value').innerText = balance;
+            document.getElementById('opened-count').innerText = openedCasesCount;
         }
+
+        function switchTab(tabName, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById('tab-' + tabName).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function startRoulette(price, caseName) {
+            if (balance < price) {
+                alert('Недостатньо монет! 🪙❌');
+                return;
+            }
+
+            balance -= price;
+            openedCasesCount++;
+            updateUI();
+
+            const modal = document.getElementById('rouletteModal');
+            const track = document.getElementById('rouletteTrack');
+            const resultText = document.getElementById('rouletteResult');
+            
+            modal.style.display = 'flex';
+            resultText.innerText = '';
+
+            // Генеруємо випадкові елементи для рулетки
+            const items = ['🪙 5', '🪙 20', '🪙 50', '🪙 150', '🎁 Шмот', '💎 Донат', '👑 Легендарка', '🔥 Кеш'];
+            let html = '';
+            for (let i = 0; i < 30; i++) {
+                let randomItem = items[Math.floor(Math.random() * items.length)];
+                html += `<div class="roulette-item">${randomItem.split(' ')[0]}<span>${randomItem.split(' ')[1]}</span></div>`;
+            }
+            track.innerHTML = html;
+            track.style.transition = 'none';
+            track.style.left = '0px';
+
+            // Запускаємо анімацію прокрутки
+            setTimeout(() => {
+                track.style.transition = 'left 4s cubic-bezier(0.15, 0.85, 0.35, 1)';
+                let winningOffset = -(15 * 104 - 120); // зупинка на 15-му елементі
+                track.style.left = winningOffset + 'px';
+            }, 50);
+
+            // Закриття модалки після анімації
+            setTimeout(() => {
+                let winReward = Math.floor(price * (0.8 + Math.random() * 0.8));
+                balance += winReward;
+                updateUI();
+                resultText.innerText = `Виграш: +${winReward} монет! 🎉`;
+                
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 2000);
+            }, 4200);
+        }
+
+        function runUpgrade() {
+            if (balance < 50) {
+                alert('Потрібно мінімум 50 монет для апгрейду!');
+                return;
+            }
+            balance -= 50;
+            if (Math.random() > 0.5) {
+                balance += 120;
+                alert('Успіх! Ви виграли 120 монет! 🚀🔥');
+            } else {
+                alert('Невдача, ви втратили 50 монет 😢');
+            }
+            updateUI();
+        }
+
+        function addAdminMoney(amount) {
+            balance += amount;
+            updateUI();
+            alert(`Адмін додав +${amount} монет! 🪙🛠️`);
+        }
+
+        updateUI();
     </script>
+</body>
+</html>
 
 </body>
 </html>
