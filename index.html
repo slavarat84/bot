@@ -580,8 +580,8 @@
     </div>
 
     <script>
-        // Ваш Bin ID з JSONbin.io вже вбудовано тут:
         const JSONBIN_ID = '6adfad49ffd5d160538ddd03'; 
+        const JSONBIN_MASTER_KEY = '$2a$10$r59aFeXSztNRaHJLn09.D.cQbC2R/.Zx1wF3MbS9TiIVirYcTzqW2';
 
         let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 9000 + 1000);
         document.getElementById('username-display').innerText = '@' + tgUser;
@@ -715,7 +715,7 @@
         async function loadCloudData() {
             try {
                 let res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
-                    headers: { 'X-Master-Key': '' }
+                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
                 });
                 let data = await res.json();
                 let cloudRecord = data.record || {};
@@ -754,6 +754,7 @@
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_MASTER_KEY
                     },
                     body: JSON.stringify(payload)
                 });
