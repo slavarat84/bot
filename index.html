@@ -91,7 +91,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Кейси */
         .cases-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -140,7 +139,6 @@
             cursor: pointer;
         }
 
-        /* Магазин брейнротів */
         .store-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -184,7 +182,6 @@
             margin-bottom: 6px;
         }
 
-        /* Інвентар */
         .inventory-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -256,7 +253,7 @@
             flex: 1;
         }
 
-        /* Апгрейдер (Колесо Фортуни) */
+        /* Апгрейдер з чіткою стрілочкою */
         .upgrade-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -267,6 +264,29 @@
             align-items: center;
             gap: 14px;
             text-align: center;
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        /* Чітка золота стрілочка зверху */
+        .wheel-arrow {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; 
+            height: 0; 
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 16px solid var(--gold);
+            z-index: 30;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
         }
 
         .wheel-container {
@@ -281,18 +301,6 @@
             justify-content: center;
             box-shadow: 0 0 25px rgba(0,0,0,0.7), inset 0 0 15px rgba(0,0,0,0.5);
             transition: transform 4s cubic-bezier(0.1, 0.9, 0.2, 1);
-        }
-
-        .wheel-pointer {
-            position: absolute;
-            top: -8px;
-            width: 0; 
-            height: 0; 
-            border-left: 9px solid transparent;
-            border-right: 9px solid transparent;
-            border-top: 16px solid var(--gold);
-            z-index: 20;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
         }
 
         .wheel-center {
@@ -448,7 +456,6 @@
             font-weight: 700;
         }
 
-        /* Нижнє Меню */
         .nav-bar {
             position: fixed;
             bottom: 0; left: 0; width: 100%;
@@ -515,14 +522,14 @@
         <div class="inventory-grid" id="inventory-list"></div>
     </div>
 
-    <!-- 4. АПГРЕЙДЕР -->
+    <!-- 4. АПГРЕЙДЕР (ЗІ СТРІЛОЧКОЮ ТА ВИИГРАШЕМ БРЕЙНРОТА) -->
     <div id="tab-upgrade" class="tab-content">
-        <div class="section-title">⚡ Реалістичне Колесо Фортуни</div>
+        <div class="section-title">⚡ Апгрейд Брейнротів</div>
         <div class="upgrade-card">
             <p style="font-size: 12px; color: var(--text-sub);" id="upgrade-target-info">Виберіть предмет у вкладці "Інвентар"</p>
             
-            <div style="position: relative;">
-                <div class="wheel-pointer"></div>
+            <div class="wheel-wrapper">
+                <div class="wheel-arrow"></div>
                 <div class="wheel-container" id="fortuneWheel">
                     <div class="wheel-center" id="wheelCenterIcon">🎰</div>
                 </div>
@@ -533,7 +540,7 @@
                 <input type="range" id="chanceSlider" min="10" max="90" value="50" oninput="updateSlider(this.value)">
             </div>
 
-            <button class="btn-primary" onclick="spinWheel()" style="width: 100%;">Крутити Апгрейд (Безкоштовно) 🚀</button>
+            <button class="btn-primary" onclick="spinWheel()" style="width: 100%;">Зробити Апгрейд 🚀</button>
         </div>
     </div>
 
@@ -547,7 +554,7 @@
         </div>
     </div>
 
-    <!-- 6. АДМІН-ПАНЕЛЬ (ТІЛЬКИ ДЛЯ @lerytok) -->
+    <!-- 6. АДМІН-ПАНЕЛЬ -->
     <div id="tab-admin" class="tab-content">
         <div class="section-title">🛠️ Адмін-Панель (@lerytok)</div>
         <div id="admin-panel-container"></div>
@@ -587,6 +594,7 @@
         let withdrawRequests = JSON.parse(localStorage.getItem('brainrot_withdraws')) || [];
         let selectedInvIndex = null;
 
+        // Повна база брейнротів (відсортована за ціною для правильного апгрейду)
         const allBrainrots = [
             { icon: '🔴', name: 'Cursed Slap', price: 13, rarity: 'rare' },
             { icon: '☯️', name: 'Ying Yang Master', price: 13, rarity: 'rare' },
@@ -690,7 +698,7 @@
             { icon: '🍀', name: 'Fortunu and Luck', price: 242, rarity: 'common' },
             { icon: '🦊', name: 'Cangurato Fox', price: 255, rarity: 'common' },
             { icon: '☘️', name: 'Cloverat Lucky', price: 258, rarity: 'common' }
-        ];
+        ].sort((a, b) => a.price - b.price); // Сортуємо від дешевих до дорогих для апгрейду
 
         const casesList = [
             { id: 1, name: 'Нубік Бокс', price: 10, icon: '📦' },
@@ -769,7 +777,8 @@
                 return;
             }
             balance -= price;
-            inventory.push({ name, price, icon });
+            let found = allBrainrots.find(x => x.name === name);
+            inventory.push({ name, price, icon, rarity: found ? found.rarity : 'common' });
             updateUI();
             alert(`Успішно куплено: ${icon} ${name}!`);
         }
@@ -809,7 +818,6 @@
             updateUI();
         }
 
-        // Функція виведення предмета гравцем
         function withdrawItem(index) {
             let item = inventory[index];
             withdrawRequests.push({
@@ -837,13 +845,10 @@
             `).join('');
         }
 
-        // ФУНКЦІЯ ВИПАДАННЯ З МАЛИМИ ШАНСАМИ ДЛЯ ТОПОВИХ ПРЕДМЕТІВ
         function getRandomDrop() {
-            // Фільтруємо звичайні та рідкісні
             let commons = allBrainrots.filter(x => x.rarity !== 'rare');
             let rares = allBrainrots.filter(x => x.rarity === 'rare');
 
-            // Шанс випадіння рідкісного (топового) предмета — всього 4%
             let roll = Math.random() * 100;
             if (roll < 4 && rares.length > 0) {
                 return rares[Math.floor(Math.random() * rares.length)];
@@ -907,7 +912,9 @@
             const centerIcon = document.getElementById('wheelCenterIcon');
             if (selectedInvIndex !== null && inventory[selectedInvIndex]) {
                 let item = inventory[selectedInvIndex];
-                info.innerHTML = `Обрано: <b style="color:var(--gold);">${item.icon} ${item.name}</b> (${item.price}🪙) $\rightarrow$ Подвоєння!`;
+                // Знаходимо дорожчий предмет для апгрейду
+                let nextItem = allBrainrots.find(x => x.price > item.price) || item;
+                info.innerHTML = `Апгрейд: <b style="color:var(--gold);">${item.icon} ${item.name}</b> ➡️ <b style="color:var(--green);">${nextItem.icon} ${nextItem.name}</b>`;
                 centerIcon.innerText = item.icon;
             } else {
                 info.innerHTML = 'Виберіть предмет у вкладці "Інвентар"';
@@ -915,6 +922,7 @@
             }
         }
 
+        // АПГРЕЙД З ВИИГРАШЕМ НАСТУПНОГО БРЕЙНРОТА
         function spinWheel() {
             if (selectedInvIndex === null || !inventory[selectedInvIndex]) {
                 alert('Спочатку виберіть предмет у вкладці "Інвентар"!');
@@ -942,18 +950,21 @@
             wheel.style.transform = `rotate(${targetDegree}deg)`;
 
             setTimeout(() => {
-                let item = inventory[selectedInvIndex];
+                let currentItem = inventory[selectedInvIndex];
 
                 if (isSuccess) {
-                    let winPrice = item.price * 2;
-                    balance += winPrice;
+                    // Знаходимо дорожчий предмет для апгрейду
+                    let upgradeTarget = allBrainrots.find(x => x.price > currentItem.price);
+                    if (!upgradeTarget) upgradeTarget = currentItem; // Якщо дорожчих немає, даємо той самий
+
                     inventory.splice(selectedInvIndex, 1);
+                    inventory.push(upgradeTarget);
                     selectedInvIndex = null;
-                    alert(`Успіх! Колесо зупинилося у зеленій зоні! Виграно +${winPrice} монет 🪙🎉`);
+                    alert(`Успіх! Отримано новий брейнрот: ${upgradeTarget.icon} ${upgradeTarget.name} (${upgradeTarget.price} 🪙) 🎉`);
                 } else {
                     inventory.splice(selectedInvIndex, 1);
                     selectedInvIndex = null;
-                    alert(`Невдача! Колесо зупинилося у червоній зоні, предмет згорів 😢`);
+                    alert(`Невдача! Предмет згорів у колесі фортуни 😢`);
                 }
                 updateUI();
                 wheel.style.transform = `rotate(0deg)`;
@@ -973,7 +984,6 @@
             }
         }
 
-        // АДМІН-ПАНЕЛЬ З ВКЛАДКОЮ ВИВЕДЕНЬ
         function renderAdminPanel() {
             const container = document.getElementById('admin-panel-container');
             if (tgUser !== 'lerytok') {
@@ -998,7 +1008,6 @@
                 `).join('');
             }
 
-            // Список заявок на вивід
             let withdrawRows = '';
             if (withdrawRequests.length === 0) {
                 withdrawRows = `<div style="text-align:center; padding:8px; color:var(--text-sub); font-size:11px;">Немає запитів на вивід 📭</div>`;
