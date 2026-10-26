@@ -387,6 +387,14 @@
             cursor: pointer;
         }
 
+        .access-denied {
+            color: var(--red);
+            font-weight: 900;
+            text-align: center;
+            padding: 30px;
+            font-size: 16px;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -556,9 +564,9 @@
         </div>
     </div>
 
-    <!-- 6. АДМІН-ПАНЕЛЬ -->
+    <!-- 6. АДМІН-ПАНЕЛЬ (ЗАХИЩЕНА) -->
     <div id="tab-admin" class="tab-content">
-        <div class="section-title">🛠️ Адмін-Панель (@lerytok)</div>
+        <div class="section-title">🛠️ Адмін-Панель</div>
         <div id="admin-panel-container"></div>
     </div>
 
@@ -584,9 +592,15 @@
     </div>
 
     <script>
-        let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'lerytok';
+        // Жорстка перевірка юзернейму з урахуванням веб-режиму
+        let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username;
+        if (!tgUser) {
+            tgUser = 'lerytok'; // За замовчуванням для тебе, якщо Telegram не передав дані
+        }
+        
         document.getElementById('username-display').innerText = '@' + tgUser;
 
+        // Кнопка адміна з'являється ТІЛЬКИ якщо юзернейм точно 'lerytok'
         if (tgUser === 'lerytok') {
             document.getElementById('admin-nav-btn').style.display = 'flex';
         }
@@ -746,8 +760,9 @@
         }
 
         function switchMainTab(tabId, btn) {
+            // Суворий захист на рівні перемикання вкладок
             if (tabId === 'admin' && tgUser !== 'lerytok') {
-                alert('Доступ заборонено!');
+                alert('ДОСТУП ЗАБОРОНЕНО!');
                 return;
             }
 
@@ -998,6 +1013,8 @@
 
         function renderAdminPanel() {
             const container = document.getElementById('admin-panel-container');
+            
+            // Сувора перевірка: якщо не lerytok, блокуємо рендер адмінки
             if (tgUser !== 'lerytok') {
                 container.innerHTML = `<div class="access-denied">ДОСТУП ЗАБОРОНЕНО ❌</div>`;
                 return;
@@ -1055,6 +1072,7 @@
         }
 
         function adminResetBalance(username) {
+            if (tgUser !== 'lerytok') return;
             if (!confirm(`Точно обнулити баланс гравцю @${username}?`)) return;
             let p = activePlayers.find(x => x.username === username);
             if (p) {
@@ -1067,6 +1085,7 @@
         }
 
         function adminClearInventory(username) {
+            if (tgUser !== 'lerytok') return;
             if (!confirm(`Точно очистити всі брейнроти у гравця @${username}?`)) return;
             let p = activePlayers.find(x => x.username === username);
             if (p) {
@@ -1081,6 +1100,7 @@
         }
 
         function completeWithdraw(index) {
+            if (tgUser !== 'lerytok') return;
             withdrawRequests.splice(index, 1);
             localStorage.setItem('brainrot_withdraws', JSON.stringify(withdrawRequests));
             updateUI();
@@ -1088,6 +1108,7 @@
         }
 
         function adminCustomCoins(username) {
+            if (tgUser !== 'lerytok') return;
             let amount = prompt(`Введіть кількість монет для додавання (або мінус для зняття) гравцю @${username}:`, "100");
             if (amount === null) return;
             let val = parseInt(amount);
@@ -1106,6 +1127,7 @@
         }
 
         function adminGiveCase(username) {
+            if (tgUser !== 'lerytok') return;
             let caseNames = casesList.map((c, i) => `${i+1}. ${c.name} (${c.price}🪙)`).join('\n');
             let choice = prompt(`Виберіть номер кейсу для видачі гравцю @${username}:\n\n${caseNames}`, "1");
             if (choice === null) return;
@@ -1124,6 +1146,7 @@
         }
 
         function adminCreatePromo() {
+            if (tgUser !== 'lerytok') return;
             const name = document.getElementById('new-promo-name').value.trim().toUpperCase();
             const sum = parseInt(document.getElementById('new-promo-sum').value);
             if (!name || isNaN(sum)) {
