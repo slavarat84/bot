@@ -380,19 +380,11 @@
             background: var(--gold);
             color: black;
             border: none;
-            padding: 3px 6px;
+            padding: 4px 6px;
             border-radius: 5px;
             font-weight: 800;
             font-size: 10px;
             cursor: pointer;
-        }
-
-        .access-denied {
-            color: var(--red);
-            font-weight: 900;
-            text-align: center;
-            padding: 20px;
-            font-size: 14px;
         }
 
         .modal {
@@ -560,7 +552,7 @@
         </div>
     </div>
 
-    <!-- 6. АДМІН-ПАНЕЛЬ (ЗАХИЩЕНА КОДОМ) -->
+    <!-- 6. АДМІН-ПАНЕЛЬ -->
     <div id="tab-admin" class="tab-content">
         <div class="section-title">🛠️ Адмін-Панель</div>
         <div id="admin-panel-container"></div>
@@ -588,15 +580,13 @@
     </div>
 
     <script>
-        let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 1000);
+        let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 9000 + 1000);
         document.getElementById('username-display').innerText = '@' + tgUser;
 
         let balance = parseInt(localStorage.getItem('brainrot_balance')) || 0;
         let inventory = JSON.parse(localStorage.getItem('brainrot_inventory')) || [];
         let withdrawRequests = JSON.parse(localStorage.getItem('brainrot_withdraws')) || [];
         let selectedInvIndex = null;
-        
-        // Зберігаємо статус чи адмін авторизований
         let isAdminLoggedIn = localStorage.getItem('brainrot_admin_auth') === 'true';
 
         const allBrainrots = [
@@ -717,26 +707,30 @@
             { id: 10, name: 'BrainRot Ultra', price: 5000, icon: '🌀' }
         ];
 
-        let activePlayers = JSON.parse(localStorage.getItem('brainrot_online_players')) || [
-            { username: tgUser, balance: balance, inventoryCount: inventory.length }
-        ];
+        // Покращена робоча база гравців онлайн
+        let playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
+        
+        // Реєструємо поточного гравця з його інвентарем та кейсами
+        if (!playersDB[tgUser]) {
+            playersDB[tgUser] = { balance: balance, inventory: inventory, cases: {}, lastOnline: Date.now() };
+        } else {
+            balance = playersDB[tgUser].balance;
+            inventory = playersDB[tgUser].inventory || [];
+        }
 
         let activeCodes = JSON.parse(localStorage.getItem('brainrot_codes')) || { 'SKIBIDI': 200, 'LERYTOK': 1000, 'BRAINROT': 500 };
 
         function saveState() {
             localStorage.setItem('brainrot_balance', balance);
             localStorage.setItem('brainrot_inventory', JSON.stringify(inventory));
-            localStorage.setItem('brainrot_withdraws', JSON.stringify(withdrawRequests));
             localStorage.setItem('brainrot_codes', JSON.stringify(activeCodes));
             
-            let pIndex = activePlayers.findIndex(p => p.username === tgUser);
-            if (pIndex !== -1) {
-                activePlayers[pIndex].balance = balance;
-                activePlayers[pIndex].inventoryCount = inventory.length;
-            } else {
-                activePlayers.push({ username: tgUser, balance: balance, inventoryCount: inventory.length });
-            }
-            localStorage.setItem('brainrot_online_players', JSON.stringify(activePlayers));
+            if (!playersDB[tgUser]) playersDB[tgUser] = {};
+            playersDB[tgUser].balance = balance;
+            playersDB[tgUser].inventory = inventory;
+            playersDB[tgUser].lastOnline = Date.now();
+            
+            localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
         }
 
         function updateUI() {
@@ -831,6 +825,7 @@
                 price: item.price,
                 date: new Date().toLocaleTimeString()
             });
+            localStorage.setItem('brainrot_withdraws', JSON.stringify(withdrawRequests));
             inventory.splice(index, 1);
             if (selectedInvIndex === index) selectedInvIndex = null;
             updateUI();
@@ -994,7 +989,6 @@
             }
         }
 
-        // Перевірка коду для адмінки
         function checkAdminCode() {
             const inputVal = document.getElementById('admin-code-input').value.trim();
             if (inputVal === '6785431923') {
@@ -1014,7 +1008,6 @@
         function updateAdminPanel() {
             const container = document.getElementById('admin-panel-container');
             
-            // Якщо не авторизований — показуємо форму вводу коду
             if (!isAdminLoggedIn) {
                 container.innerHTML = `
                     <div class="panel-card" style="text-align: center; gap: 12px; padding: 20px;">
@@ -1026,23 +1019,38 @@
                 return;
             }
 
-            let otherPlayers = activePlayers.filter(p => p.username !== tgUser);
+            // Синхронізуємо базу гравців з localStorage для актуального онлайн списку
+            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
+            playersDB[tgUser] = { balance: balance, inventory: inventory, lastOnline: Date.now() };
+            localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
+
+            let now = Date.now();
+            let allPlayerKeys = Object.keys(playersDB);
 
             let onlineRows = '';
-            if (otherPlayers.length === 0) {
-                onlineRows = `<div style="text-align:center; padding:8px; color:var(--text-sub); font-size:11px;">У мережі немає інших гравців 🟢</div>`;
+            if (allPlayerKeys.length === 0) {
+                onlineRows = `<div style="text-align:center; padding:8px; color:var(--text-sub); font-size:11px;">Немає гравців у базі 🟢</div>`;
             } else {
-                onlineRows = otherPlayers.map((p, idx) => `
-                    <div class="online-user-row">
-                        <div><b>@${p.username}</b><br><span style="color:var(--gold)">${p.balance} 🪙</span></div>
-                        <div class="admin-actions">
-                            <button class="btn-mini" onclick="adminCustomCoins('${p.username}')">±</button>
-                            <button class="btn-mini" style="background:#ef4444; color:white;" onclick="adminResetBalance('${p.username}')">0🪙</button>
-                            <button class="btn-mini" style="background:#ef4444; color:white;" onclick="adminClearInventory('${p.username}')">🎒0</button>
-                            <button class="btn-mini" style="background:#38bdf8;" onclick="adminGiveCase('${p.username}')">+Кейс</button>
+                onlineRows = allPlayerKeys.map(username => {
+                    let pData = playersDB[username];
+                    let isOnline = (now - pData.lastOnline < 300000); // Онлайн, якщо активність за останні 5 хв
+                    let invCount = (pData.inventory || []).length;
+                    return `
+                        <div class="online-user-row">
+                            <div>
+                                <b>@${username}</b> ${isOnline ? '🟢' : '⚪'} <br>
+                                <span style="color:var(--gold)">${pData.balance} 🪙</span> | 🎒 ${invCount} шт.
+                            </div>
+                            <div class="admin-actions">
+                                <button class="btn-mini" onclick="adminAddCoins('${username}')">🪙+</button>
+                                <button class="btn-mini" style="background:#ef4444; color:white;" onclick="adminResetBalance('${username}')">0🪙</button>
+                                <button class="btn-mini" style="background:#38bdf8;" onclick="adminGiveCaseModal('${username}')">+Кейс</button>
+                                <button class="btn-mini" style="background:#22c55e; color:white;" onclick="adminGiveBrainrotModal('${username}')">+Брейн</button>
+                                <button class="btn-mini" style="background:#ef4444; color:white;" onclick="adminClearInvModal('${username}')">🎒-</button>
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
 
             let withdrawRows = '';
@@ -1065,12 +1073,12 @@
                     </div>
                     <hr style="border-color: var(--border);">
                     <p style="font-size: 13px; font-weight: 800; color: var(--gold);">📦 Запити на вивід (${withdrawRequests.length})</p>
-                    <div style="display:flex; flex-direction:column; gap:6px; max-height:140px; overflow-y:auto;">
+                    <div style="display:flex; flex-direction:column; gap:6px; max-height:120px; overflow-y:auto;">
                         ${withdrawRows}
                     </div>
                     <hr style="border-color: var(--border);">
-                    <p style="font-size: 13px; font-weight: 800; color: var(--gold);">👑 Гравці онлайн</p>
-                    <div style="display:flex; flex-direction:column; gap:6px; max-height:130px; overflow-y:auto;">
+                    <p style="font-size: 13px; font-weight: 800; color: var(--gold);">👑 Гравці в базі (🟢 Онлайн)</p>
+                    <div style="display:flex; flex-direction:column; gap:6px; max-height:160px; overflow-y:auto;">
                         ${onlineRows}
                     </div>
                     <hr style="border-color: var(--border);">
@@ -1088,63 +1096,40 @@
             updateAdminPanel();
         }
 
-        function adminResetBalance(username) {
-            if (!isAdminLoggedIn) return;
-            if (!confirm(`Точно обнулити баланс гравцю @${username}?`)) return;
-            let p = activePlayers.find(x => x.username === username);
-            if (p) {
-                p.balance = 0;
-                if (username === tgUser) balance = 0;
-                localStorage.setItem('brainrot_online_players', JSON.stringify(activePlayers));
-                updateUI();
-                alert(`Баланс гравця @${username} обнулено! 🪙`);
-            }
-        }
-
-        function adminClearInventory(username) {
-            if (!isAdminLoggedIn) return;
-            if (!confirm(`Точно очистити всі брейнроти у гравця @${username}?`)) return;
-            let p = activePlayers.find(x => x.username === username);
-            if (p) {
-                p.inventoryCount = 0;
-                if (username === tgUser) {
-                    inventory = [];
-                }
-                localStorage.setItem('brainrot_online_players', JSON.stringify(activePlayers));
-                updateUI();
-                alert(`Інвентар брейнротів гравця @${username} повністю очищено! 🎒`);
-            }
-        }
-
-        function completeWithdraw(index) {
-            if (!isAdminLoggedIn) return;
-            withdrawRequests.splice(index, 1);
-            localStorage.setItem('brainrot_withdraws', JSON.stringify(withdrawRequests));
-            updateUI();
-            alert('Запит на вивід успішно оброблено і видалено! 👍');
-        }
-
-        function adminCustomCoins(username) {
-            if (!isAdminLoggedIn) return;
-            let amount = prompt(`Введіть кількість монет для додавання (або мінус для зняття) гравцю @${username}:`, "100");
+        // --- НОВІ АДМІН-ФУНКЦІЇ ДЛЯ МОНЕТ, КЕЙСІВ ТА БРЕЙНРОТІВ ---
+        function adminAddCoins(username) {
+            let amount = prompt(`Введіть кількість монет для додавання (або мінус для віднімання) гравцю @${username}:`, "1000");
             if (amount === null) return;
             let val = parseInt(amount);
             if (isNaN(val)) {
                 alert("Введіть коректне число!");
                 return;
             }
-            let p = activePlayers.find(x => x.username === username);
-            if (p) {
-                p.balance = Math.max(0, p.balance + val);
-                if (username === tgUser) balance = p.balance;
-                localStorage.setItem('brainrot_online_players', JSON.stringify(activePlayers));
+            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
+            if (playersDB[username]) {
+                playersDB[username].balance = Math.max(0, (playersDB[username].balance || 0) + val);
+                if (username === tgUser) {
+                    balance = playersDB[username].balance;
+                }
+                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
                 updateUI();
                 alert(`Баланс гравця @${username} успішно змінено на ${val > 0 ? '+' + val : val} 🪙!`);
             }
         }
 
-        function adminGiveCase(username) {
-            if (!isAdminLoggedIn) return;
+        function adminResetBalance(username) {
+            if (!confirm(`Точно обнулити баланс гравцю @${username}?`)) return;
+            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
+            if (playersDB[username]) {
+                playersDB[username].balance = 0;
+                if (username === tgUser) balance = 0;
+                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
+                updateUI();
+                alert(`Баланс гравця @${username} обнулено! 🪙`);
+            }
+        }
+
+        function adminGiveCaseModal(username) {
             let caseNames = casesList.map((c, i) => `${i+1}. ${c.name} (${c.price}🪙)`).join('\n');
             let choice = prompt(`Виберіть номер кейсу для видачі гравцю @${username}:\n\n${caseNames}`, "1");
             if (choice === null) return;
@@ -1155,15 +1140,74 @@
             }
             let chosenCase = casesList[index];
             let randomDrop = getBetterRandomDrop(chosenCase.price);
-            if (username === tgUser) {
-                inventory.push(randomDrop);
+            
+            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
+            if (playersDB[username]) {
+                if (!playersDB[username].inventory) playersDB[username].inventory = [];
+                playersDB[username].inventory.push(randomDrop);
+                if (username === tgUser) {
+                    inventory = playersDB[username].inventory;
+                }
+                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
+                updateUI();
+                alert(`Гравцю @${username} видано кейс "${chosenCase.name}". Випав предмет: ${randomDrop.icon} ${randomDrop.name}! 🎉`);
             }
+        }
+
+        function adminGiveBrainrotModal(username) {
+            let bNames = allBrainrots.map((b, i) => `${i+1}. ${b.icon} ${b.name} (${b.price}🪙)`).join('\n');
+            let choice = prompt(`Виберіть номер брейнрота для видачі гравцю @${username} (або введіть назву):\n\nВведіть номер від 1 до ${allBrainrots.length}`, "1");
+            if (choice === null) return;
+            let index = parseInt(choice) - 1;
+            let chosenBrainrot = allBrainrots[index] || allBrainrots[0];
+
+            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
+            if (playersDB[username]) {
+                if (!playersDB[username].inventory) playersDB[username].inventory = [];
+                playersDB[username].inventory.push(chosenBrainrot);
+                if (username === tgUser) {
+                    inventory = playersDB[username].inventory;
+                }
+                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
+                updateUI();
+                alert(`Гравцю @${username} успішно додано брейнрот ${chosenBrainrot.icon} ${chosenBrainrot.name}! 🧠`);
+            }
+        }
+
+        function adminClearInvModal(username) {
+            let action = prompt(`Виберіть дію для інвентарю гравця @${username}:\n1 - Видалити останній предмет\n2 - Очистити весь інвентар повністю`, "1");
+            if (action === null) return;
+            
+            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
+            if (playersDB[username]) {
+                if (action === '1') {
+                    if (playersDB[username].inventory && playersDB[username].inventory.length > 0) {
+                        let removed = playersDB[username].inventory.pop();
+                        alert(`Видалено предмет: ${removed.icon} ${removed.name}`);
+                    } else {
+                        alert('Інвентар вже порожній!');
+                    }
+                } else if (action === '2') {
+                    if (!confirm(`Точно повністю очистити інвентар гравця @${username}?`)) return;
+                    playersDB[username].inventory = [];
+                    alert('Інвентар повністю очищено!');
+                }
+                if (username === tgUser) {
+                    inventory = playersDB[username].inventory;
+                }
+                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
+                updateUI();
+            }
+        }
+
+        function completeWithdraw(index) {
+            withdrawRequests.splice(index, 1);
+            localStorage.setItem('brainrot_withdraws', JSON.stringify(withdrawRequests));
             updateUI();
-            alert(`Гравцю @${username} успішно видано кейс "${chosenCase.name}"! Випав предмет: ${randomDrop.icon} ${randomDrop.name} 🎉`);
+            alert('Запит на вивід успішно оброблено і видалено! 👍');
         }
 
         function adminCreatePromo() {
-            if (!isAdminLoggedIn) return;
             const name = document.getElementById('new-promo-name').value.trim().toUpperCase();
             const sum = parseInt(document.getElementById('new-promo-sum').value);
             if (!name || isNaN(sum)) {
@@ -1172,7 +1216,7 @@
             }
             activeCodes[name] = sum;
             localStorage.setItem('brainrot_codes', JSON.stringify(activeCodes));
-            alert(`Промокод "${name}" на ${sum} монет успішно створено! 🔥`);
+            alert(`Промокод "${name}" на ${sum} монет успішно створено та працює! 🔥`);
             document.getElementById('new-promo-name').value = '';
             document.getElementById('new-promo-sum').value = '';
         }
