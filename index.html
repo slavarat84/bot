@@ -253,7 +253,7 @@
             flex: 1;
         }
 
-        /* Апгрейдер з чіткою стрілочкою */
+        /* Апгрейдер: стрілочка строго по центру зверху */
         .upgrade-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
@@ -268,25 +268,26 @@
 
         .wheel-wrapper {
             position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 12px auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 10px 0;
         }
 
-        /* Чітка золота стрілочка зверху */
         .wheel-arrow {
             position: absolute;
-            top: -14px;
+            top: -12px;
             left: 50%;
             transform: translateX(-50%);
             width: 0; 
             height: 0; 
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-top: 16px solid var(--gold);
-            z-index: 30;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-top: 15px solid var(--gold);
+            z-index: 40;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.8));
         }
 
         .wheel-container {
@@ -304,14 +305,14 @@
         }
 
         .wheel-center {
-            width: 60px;
-            height: 60px;
+            width: 54px;
+            height: 54px;
             background: var(--card-bg);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
+            font-size: 24px;
             border: 3px solid var(--gold);
             z-index: 10;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
@@ -522,7 +523,7 @@
         <div class="inventory-grid" id="inventory-list"></div>
     </div>
 
-    <!-- 4. АПГРЕЙДЕР (ЗІ СТРІЛОЧКОЮ ТА ВИИГРАШЕМ БРЕЙНРОТА) -->
+    <!-- 4. АПГРЕЙДЕР (ЗІ СТРІЛОЧКОЮ ПО ЦЕНТРУ ТА ВИИГРАШЕМ БРЕЙНРОТА) -->
     <div id="tab-upgrade" class="tab-content">
         <div class="section-title">⚡ Апгрейд Брейнротів</div>
         <div class="upgrade-card">
@@ -594,7 +595,6 @@
         let withdrawRequests = JSON.parse(localStorage.getItem('brainrot_withdraws')) || [];
         let selectedInvIndex = null;
 
-        // Повна база брейнротів (відсортована за ціною для правильного апгрейду)
         const allBrainrots = [
             { icon: '🔴', name: 'Cursed Slap', price: 13, rarity: 'rare' },
             { icon: '☯️', name: 'Ying Yang Master', price: 13, rarity: 'rare' },
@@ -698,7 +698,7 @@
             { icon: '🍀', name: 'Fortunu and Luck', price: 242, rarity: 'common' },
             { icon: '🦊', name: 'Cangurato Fox', price: 255, rarity: 'common' },
             { icon: '☘️', name: 'Cloverat Lucky', price: 258, rarity: 'common' }
-        ].sort((a, b) => a.price - b.price); // Сортуємо від дешевих до дорогих для апгрейду
+        ].sort((a, b) => a.price - b.price);
 
         const casesList = [
             { id: 1, name: 'Нубік Бокс', price: 10, icon: '📦' },
@@ -912,7 +912,6 @@
             const centerIcon = document.getElementById('wheelCenterIcon');
             if (selectedInvIndex !== null && inventory[selectedInvIndex]) {
                 let item = inventory[selectedInvIndex];
-                // Знаходимо дорожчий предмет для апгрейду
                 let nextItem = allBrainrots.find(x => x.price > item.price) || item;
                 info.innerHTML = `Апгрейд: <b style="color:var(--gold);">${item.icon} ${item.name}</b> ➡️ <b style="color:var(--green);">${nextItem.icon} ${nextItem.name}</b>`;
                 centerIcon.innerText = item.icon;
@@ -922,7 +921,6 @@
             }
         }
 
-        // АПГРЕЙД З ВИИГРАШЕМ НАСТУПНОГО БРЕЙНРОТА
         function spinWheel() {
             if (selectedInvIndex === null || !inventory[selectedInvIndex]) {
                 alert('Спочатку виберіть предмет у вкладці "Інвентар"!');
@@ -953,9 +951,8 @@
                 let currentItem = inventory[selectedInvIndex];
 
                 if (isSuccess) {
-                    // Знаходимо дорожчий предмет для апгрейду
                     let upgradeTarget = allBrainrots.find(x => x.price > currentItem.price);
-                    if (!upgradeTarget) upgradeTarget = currentItem; // Якщо дорожчих немає, даємо той самий
+                    if (!upgradeTarget) upgradeTarget = currentItem;
 
                     inventory.splice(selectedInvIndex, 1);
                     inventory.push(upgradeTarget);
