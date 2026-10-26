@@ -150,8 +150,10 @@
             border-color: var(--border-cyber);
         }
 
-        .item-emoji {
-            font-size: 46px;
+        .item-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
             margin-bottom: 8px;
             filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6));
         }
@@ -268,7 +270,7 @@
             box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
         }
 
-        .inv-emoji { font-size: 36px; margin-bottom: 4px; }
+        .inv-img { width: 40px; height: 40px; object-fit: contain; margin-bottom: 4px; }
         .inv-name { font-size: 10px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .inv-cost { font-size: 9px; color: var(--accent-cyan); font-weight: 800; margin-bottom: 8px; }
 
@@ -334,8 +336,10 @@
             to { transform: rotate(360deg); }
         }
 
-        .holo-icon {
-            font-size: 56px;
+        .holo-icon-img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
             z-index: 2;
             filter: drop-shadow(0 0 15px rgba(0, 242, 254, 0.5));
             transition: transform 0.3s;
@@ -446,7 +450,12 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
+        }
+
+        .roulette-card img {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
         }
 
         .roulette-card span {
@@ -516,7 +525,7 @@
             <div class="brand-title">Cyber X Battle</div>
             <div class="brand-user" id="username-display">@player</div>
         </div>
-        <div class="balance-pill">⚡ <span id="balance">0</span></div>
+        <div class="balance-pill">⚡ <span id="balance">100</span></div>
     </div>
 
     <!-- 1. КЕЙСИ -->
@@ -532,7 +541,7 @@
             <div class="section-title" id="view-case-title">Інформація про кейс</div>
         </div>
         <div class="cyber-card" style="padding: 20px; gap: 10px;">
-            <div id="view-case-emoji" style="font-size: 60px;">📦</div>
+            <img id="view-case-img" class="item-img" src="https://via.placeholder.com/80/00f2fe/030407?text=CASE" alt="Case">
             <div id="view-case-name" style="font-size: 16px; font-weight: 900;">Назва кейсу</div>
             <div id="view-case-price" style="font-size: 14px; color: var(--accent-cyan); font-weight: 800; margin-bottom: 6px;">Ціна: 0 ⚡</div>
             <button class="btn-cyber" id="open-case-action-btn" onclick="openCurrentSelectedCase()">ДЕКОДУВАТИ КЕЙС</button>
@@ -561,7 +570,7 @@
             <p style="font-size: 11px; color: var(--text-secondary);" id="upgrade-target-info">Оберіть предмет у сховищі</p>
             <div class="holo-display">
                 <div class="holo-ring"></div>
-                <div class="holo-icon" id="upgradeCenterIcon">💠</div>
+                <img id="upgradeCenterIcon" class="holo-icon-img" src="https://via.placeholder.com/80/00f2fe/030407?text=ITEM" alt="Item">
             </div>
             <div class="slider-box">
                 <div class="slider-meta">
@@ -612,191 +621,172 @@
     </div>
 
     <script>
-        const JSONBIN_ID = '6adfad49ffd5d160538ddd03'; 
-        const JSONBIN_MASTER_KEY = '$2a$10$r59aFeXSztNRaHJLn09.D.cQbC2R/.Zx1wF3MbS9TiIVirYcTzqW2';
-
         let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 9000 + 1000);
         document.getElementById('username-display').innerText = '@' + tgUser;
 
-        let balance = 100;
-        let inventory = [];
-        let withdrawRequests = [];
-        let activeCodes = { 'SKIBIDI': 200, 'LERYTOK': 1000, 'BRAINROT': 500 };
-        let allPlayersData = {};
+        let balance = parseInt(localStorage.getItem('cyber_balance_' + tgUser)) || 100;
+        let inventory = JSON.parse(localStorage.getItem('cyber_inv_' + tgUser)) || [];
+        let withdrawRequests = JSON.parse(localStorage.getItem('cyber_withdraws')) || [];
+        let activeCodes = JSON.parse(localStorage.getItem('cyber_codes')) || { 'SKIBIDI': 200, 'LERYTOK': 1000, 'BRAINROT': 500 };
+        
         let selectedInvIndex = null;
         let currentSelectedCase = null;
         let isAdminLoggedIn = localStorage.getItem('brainrot_admin_auth') === 'true';
 
+        // РЕПЛАСУЙ URL-АДРЕСИ ЗОБРАЖЕНЬ НА ВЛАСНІ КАРТИНКИ (наприклад: 'images/trios.png')
         const allBrainrots = [
-            { icon: '🔴', name: 'Cursed Slap', price: 13, rarity: 'rare' },
-            { icon: '☯️', name: 'Ying Yang Master', price: 13, rarity: 'rare' },
-            { icon: '🐶', name: 'Money Puggies Squad', price: 15, rarity: 'common' },
-            { icon: '🔥', name: 'Lava Slap Extreme', price: 15, rarity: 'common' },
-            { icon: '🛸', name: 'Nuclearo Drone', price: 16, rarity: 'common' },
-            { icon: '🏠', name: 'Esok Sekolah Kids', price: 17, rarity: 'common' },
-            { icon: '⛏️', name: 'Agarini La Shovel', price: 23, rarity: 'common' },
-            { icon: '👁️', name: 'Abbysaloco Beast', price: 23, rarity: 'common' },
-            { icon: '👥', name: 'Los Mobilis Crew', price: 24, rarity: 'common' },
-            { icon: '🌈', name: 'Rainbow Slap Magic', price: 24, rarity: 'common' },
-            { icon: '🇲🇽', name: 'Los Burritos Gang', price: 25, rarity: 'common' },
-            { icon: '🐶', name: 'Los Puggies Mafia', price: 29, rarity: 'common' },
-            { icon: '🗿', name: 'Orcaledon Titan', price: 30, rarity: 'common' },
-            { icon: '🥥', name: 'Ketupat Ketupat', price: 30, rarity: 'common' },
-            { icon: '🧰', name: 'Mieteteira Box', price: 30, rarity: 'common' },
-            { icon: '🍬', name: 'Los Candies Sweet', price: 32, rarity: 'common' },
-            { icon: '👹', name: 'Demon Head Lord', price: 32, rarity: 'common' },
-            { icon: '🧺', name: 'Lavadorito Machine', price: 33, rarity: 'common' },
-            { icon: '✨', name: 'Crystal Slap Pro', price: 33, rarity: 'common' },
-            { icon: '🌀', name: 'Ying Yang Portal', price: 34, rarity: 'common' },
-            { icon: '🌙', name: 'Bloodmoon Eclipse', price: 35, rarity: 'common' },
-            { icon: '👼', name: 'Cupid Wings Angel', price: 36, rarity: 'common' },
-            { icon: '🏝️', name: 'Los Tangcitos Beach', price: 36, rarity: 'common' },
-            { icon: '🍧', name: 'Waverider Ice', price: 37, rarity: 'common' },
-            { icon: '🧹', name: 'Witch Broom Flight', price: 40, rarity: 'common' },
-            { icon: '🕳️', name: 'Blackhole Vortex', price: 40, rarity: 'common' },
-            { icon: '🐱', name: 'Mi Gatito Cute', price: 41, rarity: 'common' },
-            { icon: '🤖', name: 'Camera Ranger', price: 41, rarity: 'common' },
-            { icon: '🌀', name: 'Ventoliero Wind', price: 44, rarity: 'common' },
-            { icon: '🧃', name: 'Garama and Mad', price: 44, rarity: 'common' },
-            { icon: '🧊', name: 'Los Primos Brothers', price: 45, rarity: 'common' },
-            { icon: '🚀', name: 'Air Strike Missile', price: 45, rarity: 'common' },
-            { icon: '💵', name: 'Cash or Card Pay', price: 46, rarity: 'common' },
-            { icon: '🦄', name: 'Candy Sensation', price: 46, rarity: 'common' },
-            { icon: '🌮', name: 'Los Planitos Alien', price: 49, rarity: 'common' },
-            { icon: '🌴', name: 'La Summer Vibes', price: 49, rarity: 'common' },
-            { icon: '🍯', name: 'Honey Honey Bear', price: 51, rarity: 'common' },
-            { icon: '🥫', name: 'Ketchuru and Mustard', price: 54, rarity: 'common' },
-            { icon: '🌮', name: 'Quesadilo Supreme', price: 55, rarity: 'common' },
-            { icon: '🐩', name: 'Noodle Noodle Dog', price: 57, rarity: 'common' },
-            { icon: '🧤', name: 'Phantom Slap Dark', price: 60, rarity: 'common' },
-            { icon: '🥗', name: 'La Jolly Green', price: 69, rarity: 'common' },
-            { icon: '🎩', name: 'Sammyni Fancy', price: 74, rarity: 'common' },
-            { icon: '🦖', name: 'Eviledon Monster', price: 75, rarity: 'common' },
-            { icon: '🟢', name: 'W or L Choice', price: 78, rarity: 'common' },
-            { icon: '🧨', name: 'Lava Blaster Gun', price: 80, rarity: 'common' },
-            { icon: '👾', name: 'Los Tictacs Aliens', price: 82, rarity: 'common' },
-            { icon: '🎀', name: 'Los Sweethearts', price: 84, rarity: 'common' },
-            { icon: '🧟', name: 'John Doe Unknown', price: 84, rarity: 'common' },
-            { icon: '🍕', name: 'Pizza and Burger', price: 84, rarity: 'common' },
-            { icon: '🍬', name: 'Los Jolly Christmas', price: 91, rarity: 'common' },
-            { icon: '🥤', name: 'Popcuru and Cola', price: 92, rarity: 'common' },
-            { icon: '🇲🇽', name: 'Los Mariachis Band', price: 92, rarity: 'common' },
-            { icon: '🐧', name: 'Quackini Squad', price: 93, rarity: 'common' },
-            { icon: '🛷', name: 'Santas Sleigh Ride', price: 93, rarity: 'common' },
-            { icon: '🎅', name: 'La Secret Santa', price: 95, rarity: 'common' },
-            { icon: '🦄', name: 'Celestial Pegasus', price: 98, rarity: 'common' },
-            { icon: '🦂', name: 'Scorpino Cyber', price: 98, rarity: 'common' },
-            { icon: '👧', name: 'Las Sis Twins', price: 99, rarity: 'common' },
-            { icon: '🍔', name: 'Burguro And Fries', price: 109, rarity: 'common' },
-            { icon: '🍟', name: 'La Food Court', price: 109, rarity: 'common' },
-            { icon: '🇺🇸', name: 'Capitano America', price: 109, rarity: 'common' },
-            { icon: '🥤', name: 'Swag Soda Drink', price: 111, rarity: 'common' },
-            { icon: '🧊', name: 'Steakini Family', price: 117, rarity: 'common' },
-            { icon: '🥇', name: 'Gold Gold Champion', price: 122, rarity: 'common' },
-            { icon: '🦈', name: 'Tralaledon Shark', price: 122, rarity: 'common' },
-            { icon: '👼', name: 'Los Cupids Love', price: 126, rarity: 'common' },
-            { icon: '🥛', name: 'Fragrama and Milk', price: 128, rarity: 'common' },
-            { icon: '💀', name: 'Los Hotspot Gang', price: 131, rarity: 'common' },
-            { icon: '🌮', name: 'La Taco Combo', price: 132, rarity: 'common' },
-            { icon: '🏴‍☠️', name: 'Capitano Pirate', price: 134, rarity: 'common' },
-            { icon: '🍝', name: 'Los Spaghetti Club', price: 135, rarity: 'common' },
-            { icon: '🌺', name: 'Pop Pop Petals', price: 136, rarity: 'common' },
-            { icon: '🍪', name: 'Cooki and Milk', price: 137, rarity: 'common' },
-            { icon: '🦅', name: 'Tuff Toucan Bird', price: 138, rarity: 'common' },
-            { icon: '🎄', name: 'Jolly Jolly Holiday', price: 139, rarity: 'common' },
-            { icon: '🌹', name: 'Rosetti Tua Rose', price: 140, rarity: 'common' },
-            { icon: '🐵', name: 'Money Monkey King', price: 140, rarity: 'common' },
-            { icon: '🤖', name: 'Swaggy Bros Bot', price: 150, rarity: 'common' },
-            { icon: '🎃', name: 'Spooky and Pumpkin', price: 153, rarity: 'common' },
-            { icon: '🐰', name: 'Boppin Bunny Hop', price: 160, rarity: 'common' },
-            { icon: '🐶', name: 'Money Monster Dog', price: 162, rarity: 'common' },
-            { icon: '🐉', name: 'Cerberus Dragon', price: 163, rarity: 'rare' },
-            { icon: '🍪', name: 'La Ginger Sweet', price: 164, rarity: 'common' },
-            { icon: '🧀', name: 'Chipso and Cheese', price: 166, rarity: 'common' },
-            { icon: '🌶️', name: 'Chillin Chili Pepper', price: 171, rarity: 'common' },
-            { icon: '🧊', name: 'Globa Stepper', price: 173, rarity: 'common' },
-            { icon: '🚂', name: 'Trenostruz Express', price: 180, rarity: 'common' },
-            { icon: '🌹', name: 'Lovin Rose Eternal', price: 181, rarity: 'common' },
-            { icon: '🦌', name: 'Reinito Sleigh', price: 185, rarity: 'common' },
-            { icon: '❄️', name: 'Yetimatic Snow', price: 192, rarity: 'common' },
-            { icon: '🏋️', name: 'Gym Bros Fit', price: 199, rarity: 'common' },
-            { icon: '🐝', name: 'Queen Bee Hive', price: 199, rarity: 'common' },
-            { icon: '🤝', name: 'Los Amigos Unidos', price: 201, rarity: 'common' },
-            { icon: '🎄', name: 'Festive 67 Party', price: 207, rarity: 'common' },
-            { icon: '🍓', name: 'Fragola La Strawberry', price: 212, rarity: 'common' },
-            { icon: '🤖', name: 'La Fuse Machine', price: 220, rarity: 'common' },
-            { icon: '📜', name: 'No My Exam Scroll', price: 221, rarity: 'common' },
-            { icon: '🗿', name: 'Dug dug dug Stone', price: 237, rarity: 'common' },
-            { icon: '🍀', name: 'Fortunu and Luck', price: 242, rarity: 'common' },
-            { icon: '🦊', name: 'Cangurato Fox', price: 255, rarity: 'common' },
-            { icon: '☘️', name: 'Cloverat Lucky', price: 258, rarity: 'common' },
-            { icon: '💎', name: 'Cyber Titan Elite', price: 2200, rarity: 'rare' },
-            { icon: '👑', name: 'Supreme Overlord', price: 3000, rarity: 'rare' }
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Trios', name: 'Los Trios', price: 4 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=67', name: '67', price: 5 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Hammy', name: 'Spinny Hammy', price: 6 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Arcadopus', name: 'Arcadopus', price: 7 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CandySlap', name: 'Candy Slap', price: 7 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Noobinis', name: 'Los Noobinis', price: 7 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=TangTang', name: 'Tang Tang Keletang', price: 8 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LaGrande', name: 'La Grande', price: 9 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=DivineSlap', name: 'Divine Slap', price: 9 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Tictac', name: 'Tictac Sahur', price: 12 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Bacuru', name: 'Bacuru and Egguru', price: 12 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Los67', name: 'Los 67', price: 12 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CursedSlap', name: 'Cursed Slap', price: 12 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=YingYang', name: 'Ying Yang Slap', price: 12 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LavaSlap', name: 'Lava Slap', price: 14 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Combinas', name: 'Los Combinasionas', price: 14 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=MoneyPuggy', name: 'Money Puggy', price: 14 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Nuclearo', name: 'Nuclearo Dinossauro', price: 15 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=EsokSekolah', name: 'Esok Sekolah', price: 16 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Agarini', name: 'Agarini La Palini', price: 21 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Abbymaloco', name: 'Abbymaloco', price: 21 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosMobilis', name: 'Los Mobilis', price: 22 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=RainbowSlap', name: 'Rainbow Slap', price: 22 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosBurritos', name: 'Los Burritos', price: 23 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosPuggies', name: 'Los Puggies', price: 27 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Ketupat', name: 'Ketupat Kepat', price: 28 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Orcaledon', name: 'Orcaledon', price: 28 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Mieteteira', name: 'Mieteteira Bicicleteira', price: 28 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosCandies', name: 'Los Candies', price: 30 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=DemonHead', name: 'Demon Head', price: 30 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Lavadorito', name: 'Lavadorito Spinito', price: 31 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CrystalSlap', name: 'Crystal Slap', price: 31 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=YingLamp', name: 'Ying Yang Lamp', price: 32 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Bloodmoon', name: 'Bloodmoon Slap', price: 33 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CupidWings', name: 'Cupid Wings', price: 34 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosTangcitos', name: 'Los Tangcitos', price: 34 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Waverider', name: 'Waverider', price: 35 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=WitchBroom', name: 'Witch Broom', price: 38 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Blackhole', name: 'Blackhole Bomb', price: 38 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=MiGatito', name: 'Mi Gatito', price: 39 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CameraRamen', name: 'Camera Ramen', price: 39 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Ventoliero', name: 'Ventoliero Pavonero', price: 41 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Garama', name: 'Garama and Madundung', price: 41 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Examine', name: 'Yes My Examine', price: 41 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosPrimos', name: 'Los Primos', price: 42 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=AirStrike', name: 'Air Strike', price: 42 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CashOrCard', name: 'Cash or Card', price: 43 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CandySentry', name: 'Candy Sentry', price: 43 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosPlanitos', name: 'Los Planitos', price: 46 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LaSummer', name: 'La Summer Grande', price: 46 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=HoneyBear', name: 'Honey Honey Bear', price: 48 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Ketchuru', name: 'Ketchuru and Musturu', price: 51 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Quesadilo', name: 'Quesadilo Vampiro', price: 52 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=NoodlePoodle', name: 'Noodle Noodle Poodle', price: 54 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=PhantomSlap', name: 'Phantom Slap', price: 57 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LaJolly', name: 'La Jolly Grande', price: 65 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Sammyni', name: 'Sammyni Fattini', price: 70 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Eviledon', name: 'Eviledon', price: 71 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=WorL', name: 'W or L', price: 74 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LavaBlaster', name: 'Lava Blaster', price: 76 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosTictacs', name: 'Los Tictacs', price: 78 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Sweethearts', name: 'Los Sweethearts', price: 80 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=JohnDoe', name: 'John Doe', price: 80 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=PizzaRanch', name: 'Pizza and Ranch', price: 80 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosJolly', name: 'Los Jolly Combinasionas', price: 86 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Popcuru', name: 'Popcuru and Fizzuru', price: 87 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosMariachis', name: 'Los Mariachis', price: 87 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Quackini', name: 'Quackini Snackini', price: 88 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=SantasSleigh', name: 'Santas Sleigh', price: 88 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=SecretComb', name: 'La Secret Combinasion', price: 90 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Pegasus', name: 'Celestial Pegasus', price: 93 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Scorpino', name: 'Scorpino Coasterino', price: 93 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LasSis', name: 'Las Sis', price: 94 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Burguro', name: 'Burguro And Fryuro', price: 103 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LaFoodComb', name: 'La Food Combinasion', price: 103 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Capitano', name: 'Capitano Americano', price: 103 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=SwagSoda', name: 'Swag Soda', price: 105 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Steakini', name: 'Steakini Fattini', price: 111 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=GoldGold', name: 'Gold Gold Gold', price: 116 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Tralaledon', name: 'Tralaledon', price: 116 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosCupids', name: 'Los Cupids', price: 120 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Fragrama', name: 'Fragrama and Chocrama', price: 121 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Hotspotsitos', name: 'Los Hotspotsitos', price: 124 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LaTacoComb', name: 'La Taco Combinasion', price: 125 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CapitanoMoby', name: 'Capitano Moby', price: 127 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Spaghettis', name: 'Los Spaghettis', price: 128 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Petalini', name: 'Pop Pop Petalini', price: 129 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=CookiMilki', name: 'Cooki and Milki', price: 130 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=TuffToucan', name: 'Tuff Toucan', price: 131 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=JollySahur', name: 'Jolly Jolly Sahur', price: 132 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Rosetti', name: 'Rosetti Tualetti', price: 133 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Reindeer', name: 'Money Money Reindeer', price: 133 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=SwaggyBros', name: 'Swaggy Bros', price: 142 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=SpookyPumpky', name: 'Spooky and Pumpky', price: 145 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=BoppinBunny', name: 'Boppin Bunny', price: 152 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=MoneyBros', name: 'Money Money Bros', price: 154 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Cerberus', name: 'Cerberus', price: 155 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LaGinger', name: 'La Ginger Sekolah', price: 156 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=ChipsoQueso', name: 'Chipso and Queso', price: 158 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=ChillinChili', name: 'Chillin Chili', price: 162 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=GlobaSteppa', name: 'Globa Steppa', price: 164 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Trenostruzo', name: 'Trenostruzo Turbo 4000', price: 171 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LovinRose', name: 'Lovin Rose', price: 172 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Reinito', name: 'Reinito Sleighito', price: 176 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Yetimatic', name: 'Yetimatic', price: 182 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=GymBros', name: 'Gym Bros', price: 189 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=QueenBee', name: 'Queen Bee', price: 189 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosAmigos', name: 'Los Amigos', price: 191 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Fragola', name: 'Fragola La La La', price: 201 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Festive67', name: 'Festive 67', price: 207 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LaFuse', name: 'La Fuse Machine', price: 209 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=NoMyExamine', name: 'No My Examine', price: 210 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=DugDugDug', name: 'Dug dug dug', price: 225 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Fortunu', name: 'Fortunu and Cashuru', price: 230 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Cangurato', name: 'Cangurato Gelato', price: 242 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Cloverat', name: 'Cloverat Clapat', price: 245 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Caylusaurus', name: 'Caylusaurus', price: 254 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Hopilikalika', name: 'Hopilikalika Hopilikalako', price: 267 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LaBreakfast', name: 'La Breakfast Combinasion', price: 273 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosTacoritas', name: 'Los Tacoritas', price: 276 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=DuggyBros', name: 'Duggy Bros', price: 323 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosSekolahs', name: 'Los Sekolahs', price: 325 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Guest666', name: 'Guest 666', price: 336 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosAdmins', name: 'Los Admins', price: 370 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=ExamenBros', name: 'Examen Bros', price: 374 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=SmoreSerat', name: 'Smore Serat', price: 380 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=RubikoKubiko', name: 'Rubiko and Kubiko', price: 395 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=LosHackers', name: 'Los Hackers', price: 400 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Foxini', name: 'Foxini Lanternini', price: 405 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=SecretComb', name: 'Los Secret Combinasionas', price: 419 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=RicoDinero', name: 'Rico Dinero', price: 460 },
+            { image: 'https://via.placeholder.com/80/00f2fe/030407?text=Venuspino', name: 'Venuspino', price: 487 }
         ].sort((a, b) => a.price - b.price);
 
         const casesList = [
-            { id: 1, name: 'Нубік Бокс', price: 10, icon: '📦' },
-            { id: 2, name: 'Скібіді Кейс', price: 25, icon: '🚽' },
-            { id: 3, name: 'Сакура Бокс', price: 50, icon: '🌸' },
-            { id: 4, name: 'Сигма Кейс', price: 100, icon: '🗿' },
-            { id: 5, name: 'Тун-Тун Бокс', price: 200, icon: '🎵' },
-            { id: 6, name: 'Альфа Кейс', price: 400, icon: '🔥' },
-            { id: 7, name: 'Елітний Бокс', price: 750, icon: '💎' },
-            { id: 8, name: 'Космічний Кейс', price: 1200, icon: '🚀' },
-            { id: 9, name: 'GigaChad Бокс', price: 2500, icon: '👑' },
-            { id: 10, name: 'BrainRot Ultra', price: 5000, icon: '🌀' }
+            { id: 1, name: 'Нубік Бокс', price: 10, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX1' },
+            { id: 2, name: 'Скібіді Кейс', price: 25, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX2' },
+            { id: 3, name: 'Сакура Бокс', price: 50, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX3' },
+            { id: 4, name: 'Сигма Кейс', price: 100, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX4' },
+            { id: 5, name: 'Тун-Тун Бокс', price: 200, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX5' },
+            { id: 6, name: 'Альфа Кейс', price: 400, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX6' },
+            { id: 7, name: 'Елітний Бокс', price: 750, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX7' },
+            { id: 8, name: 'Космічний Кейс', price: 1200, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX8' },
+            { id: 9, name: 'GigaChad Бокс', price: 2500, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX9' },
+            { id: 10, name: 'BrainRot Ultra', price: 5000, image: 'https://via.placeholder.com/80/00f2fe/030407?text=BOX10' }
         ];
 
-        async function loadCloudData() {
-            try {
-                let res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
-                    headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
-                });
-                let data = await res.json();
-                let cloudRecord = data.record || {};
-                
-                allPlayersData = cloudRecord.players || {};
-                withdrawRequests = cloudRecord.withdraws || [];
-                activeCodes = cloudRecord.codes || activeCodes;
-
-                if (!allPlayersData[tgUser]) {
-                    allPlayersData[tgUser] = { balance: 100, inventory: [], lastOnline: Date.now() };
-                }
-
-                balance = allPlayersData[tgUser].balance ?? 100;
-                inventory = allPlayersData[tgUser].inventory || [];
-
-                updateUI();
-            } catch(e) {
-                console.log("Помилка завантаження хмари:", e);
-                updateUI();
-            }
-        }
-
-        async function saveCloudData() {
-            if (!allPlayersData[tgUser]) allPlayersData[tgUser] = {};
-            allPlayersData[tgUser].balance = balance;
-            allPlayersData[tgUser].inventory = inventory;
-            allPlayersData[tgUser].lastOnline = Date.now();
-
-            let payload = {
-                players: allPlayersData,
-                withdraws: withdrawRequests,
-                codes: activeCodes
-            };
-
-            try {
-                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': JSONBIN_MASTER_KEY
-                    },
-                    body: JSON.stringify(payload)
-                });
-            } catch(e) {
-                console.log("Помилка збереження хмари:", e);
-            }
+        function saveData() {
+            localStorage.setItem('cyber_balance_' + tgUser, balance);
+            localStorage.setItem('cyber_inv_' + tgUser, JSON.stringify(inventory));
+            localStorage.setItem('cyber_withdraws', JSON.stringify(withdrawRequests));
+            localStorage.setItem('cyber_codes', JSON.stringify(activeCodes));
         }
 
         function updateUI() {
@@ -805,7 +795,7 @@
             renderInventory();
             renderCases();
             renderAdminPanel();
-            saveCloudData();
+            saveData();
         }
 
         function switchMainTab(tabId, btn) {
@@ -814,7 +804,6 @@
             
             document.getElementById('tab-' + tabId).classList.add('active');
             if(btn) btn.classList.add('active');
-            if(tabId === 'admin') loadCloudData();
         }
 
         function viewCase(caseId) {
@@ -822,7 +811,7 @@
             if (!currentSelectedCase) return;
 
             document.getElementById('view-case-title').innerText = currentSelectedCase.name;
-            document.getElementById('view-case-emoji').innerText = currentSelectedCase.icon;
+            document.getElementById('view-case-img').src = currentSelectedCase.image;
             document.getElementById('view-case-name').innerText = currentSelectedCase.name;
             document.getElementById('view-case-price').innerText = `Ціна: ${currentSelectedCase.price} ⚡`;
 
@@ -835,7 +824,7 @@
             listContainer.innerHTML = items.map(item => `
                 <div class="chance-row">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 20px;">${item.icon}</span>
+                        <img src="${item.image}" style="width:24px; height:24px; object-fit:contain;">
                         <b>${item.name}</b> (${item.price} ⚡)
                     </div>
                     <span style="color: var(--accent-cyan); font-weight: 800;">~${chancePerItem}%</span>
@@ -861,10 +850,10 @@
             
             grid.innerHTML = filtered.map((item) => `
                 <div class="cyber-card">
-                    <div class="item-emoji">${item.icon}</div>
+                    <img src="${item.image}" class="item-img" alt="${item.name}">
                     <div class="item-name">${item.name}</div>
                     <div class="item-price">${item.price} ⚡</div>
-                    <button class="btn-cyber" onclick="buyBrainrot('${item.name}', ${item.price}, '${item.icon}')">Придбати</button>
+                    <button class="btn-cyber" onclick="buyBrainrot('${item.name}', ${item.price}, '${item.image}')">Придбати</button>
                 </div>
             `).join('');
         }
@@ -873,14 +862,13 @@
             renderStore(document.getElementById('searchInput').value);
         }
 
-        function buyBrainrot(name, price, icon) {
+        function buyBrainrot(name, price, image) {
             if (balance < price) {
                 alert('Недостатньо енергії! ⚡');
                 return;
             }
             balance -= price;
-            let found = allBrainrots.find(x => x.name === name);
-            inventory.push({ name, price, icon, rarity: found ? found.rarity : 'common' });
+            inventory.push({ name, price, image });
             updateUI();
         }
 
@@ -895,7 +883,7 @@
 
             list.innerHTML = inventory.map((item, index) => `
                 <div class="inv-card ${selectedInvIndex === index ? 'selected' : ''}" onclick="selectItem(${index})">
-                    <div class="inv-emoji">${item.icon}</div>
+                    <img src="${item.image}" class="inv-img" alt="${item.name}">
                     <div class="inv-name">${item.name}</div>
                     <div class="inv-cost">${item.price}⚡</div>
                     <div class="inv-actions" onclick="event.stopPropagation()">
@@ -924,7 +912,7 @@
             withdrawRequests.push({
                 user: tgUser,
                 itemName: item.name,
-                itemIcon: item.icon,
+                itemImage: item.image,
                 price: item.price,
                 date: new Date().toLocaleTimeString()
             });
@@ -938,7 +926,7 @@
             const grid = document.getElementById('cases-grid');
             grid.innerHTML = casesList.map(c => `
                 <div class="cyber-card" onclick="viewCase(${c.id})">
-                    <div class="item-emoji">${c.icon}</div>
+                    <img src="${c.image}" class="item-img" alt="${c.name}">
                     <div class="item-name">${c.name}</div>
                     <div class="item-price">⚡ ${c.price}</div>
                     <button class="btn-cyber" onclick="event.stopPropagation(); viewCase(${c.id})">Вибрати</button>
@@ -948,21 +936,21 @@
 
         function getEligibleItemsForCase(casePrice) {
             if (casePrice >= 5000) {
-                return allBrainrots.filter(x => x.price >= 2000);
+                return allBrainrots.filter(x => x.price >= 200);
             } else if (casePrice >= 2500) {
-                return allBrainrots.filter(x => x.price >= 150 && x.price <= 500);
-            } else if (casePrice >= 1200) {
                 return allBrainrots.filter(x => x.price >= 100 && x.price <= 250);
-            } else if (casePrice >= 750) {
-                return allBrainrots.filter(x => x.price >= 80 && x.price <= 180);
-            } else if (casePrice >= 400) {
+            } else if (casePrice >= 1200) {
                 return allBrainrots.filter(x => x.price >= 50 && x.price <= 120);
+            } else if (casePrice >= 750) {
+                return allBrainrots.filter(x => x.price >= 30 && x.price <= 80);
+            } else if (casePrice >= 400) {
+                return allBrainrots.filter(x => x.price >= 20 && x.price <= 50);
             } else if (casePrice >= 200) {
-                return allBrainrots.filter(x => x.price >= 35 && x.price <= 80);
+                return allBrainrots.filter(x => x.price >= 10 && x.price <= 35);
             } else if (casePrice >= 100) {
-                return allBrainrots.filter(x => x.price >= 25 && x.price <= 60);
+                return allBrainrots.filter(x => x.price >= 5 && x.price <= 25);
             } else {
-                return allBrainrots.filter(x => x.price <= 40);
+                return allBrainrots.filter(x => x.price <= 15);
             }
         }
 
@@ -992,7 +980,7 @@
             
             for (let i = 0; i < 30; i++) {
                 let randItem = (i === 15) ? wonItem : getBetterRandomDrop(price);
-                trackHTML += `<div class="roulette-card">${randItem.icon}<span>${randItem.name}</span></div>`;
+                trackHTML += `<div class="roulette-card"><img src="${randItem.image}" alt="item"><span>${randItem.name}</span></div>`;
             }
             track.innerHTML = trackHTML;
             track.style.transition = 'none';
@@ -1006,7 +994,7 @@
             setTimeout(() => {
                 inventory.push(wonItem);
                 updateUI();
-                resultText.innerText = `Отримано: ${wonItem.icon} ${wonItem.name} (${wonItem.price} ⚡)! 🎉`;
+                resultText.innerText = `Отримано: ${wonItem.name} (${wonItem.price} ⚡)! 🎉`;
                 setTimeout(() => { modal.style.display = 'none'; }, 2200);
             }, 4200);
         }
@@ -1021,11 +1009,11 @@
             if (selectedInvIndex !== null && inventory[selectedInvIndex]) {
                 let item = inventory[selectedInvIndex];
                 let nextItem = allBrainrots.find(x => x.price > item.price) || item;
-                info.innerHTML = `Синтез: <b style="color:var(--text-primary);">${item.icon} ${item.name}</b> ➡️ <b style="color:var(--accent-cyan);">${nextItem.icon} ${nextItem.name}</b>`;
-                centerIcon.innerText = item.icon;
+                info.innerHTML = `Синтез: <b style="color:var(--text-primary);">${item.name}</b> ➡️ <b style="color:var(--accent-cyan);">${nextItem.name}</b>`;
+                centerIcon.src = item.image;
             } else {
                 info.innerHTML = 'Оберіть предмет у сховищі';
-                centerIcon.innerText = '💠';
+                centerIcon.src = 'https://via.placeholder.com/80/00f2fe/030407?text=ITEM';
             }
         }
 
@@ -1050,7 +1038,7 @@
                     inventory.splice(selectedInvIndex, 1);
                     inventory.push(upgradeTarget);
                     selectedInvIndex = null;
-                    alert(`СИНТЕЗ УСПІШНИЙ! Отримано: ${upgradeTarget.icon} ${upgradeTarget.name} 🚀`);
+                    alert(`СИНТЕЗ УСПІШНИЙ! Отримано: ${upgradeTarget.name} 🚀`);
                 } else {
                     inventory.splice(selectedInvIndex, 1);
                     selectedInvIndex = null;
@@ -1077,7 +1065,7 @@
             if (inputVal === '6785431923') {
                 isAdminLoggedIn = true;
                 localStorage.setItem('brainrot_admin_auth', 'true');
-                loadCloudData();
+                renderAdminPanel();
                 alert('Доступ до термінала надано 🔓');
             } else {
                 alert('Помилка доступу! ❌');
@@ -1104,7 +1092,7 @@
             } else {
                 withdrawRows = withdrawRequests.map((req, idx) => `
                     <div class="admin-row" style="border-color: rgba(0, 242, 254, 0.2);">
-                        <div><b>@${req.user}</b> виводить: <span style="color:var(--accent-cyan);">${req.itemIcon} ${req.itemName}</span><br><span style="font-size:9px; color:var(--text-secondary);">${req.date}</span></div>
+                        <div><b>@${req.user}</b> виводить: <span style="color:var(--accent-cyan);">${req.itemName}</span><br><span style="font-size:9px; color:var(--text-secondary);">${req.date}</span></div>
                         <button class="btn-cyber" style="width: auto; padding: 6px 12px; background: var(--neon-green); color: #030407;" onclick="completeWithdraw(${idx})">ВИДАТИ ✅</button>
                     </div>
                 `).join('');
@@ -1136,7 +1124,7 @@
 
         function completeWithdraw(index) {
             withdrawRequests.splice(index, 1);
-            saveCloudData();
+            saveData();
             renderAdminPanel();
             alert('Транзакцію підтверджено!');
         }
@@ -1146,13 +1134,13 @@
             const sum = parseInt(document.getElementById('new-promo-sum').value);
             if (!name || isNaN(sum)) return alert('Заповніть усі параметри!');
             activeCodes[name] = sum;
-            saveCloudData();
+            saveData();
             alert(`Ключ "${name}" на ${sum}⚡ успішно створено!`);
             document.getElementById('new-promo-name').value = '';
             document.getElementById('new-promo-sum').value = '';
         }
 
-        loadCloudData();
+        updateUI();
     </script>
 </body>
 </html>
