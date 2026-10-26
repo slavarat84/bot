@@ -195,7 +195,6 @@
             opacity: 0.85;
         }
 
-        /* Сторінка перегляду кейсу */
         .case-view-header {
             display: flex;
             align-items: center;
@@ -234,7 +233,6 @@
             font-size: 12px;
         }
 
-        /* Ринок та інвентар */
         .store-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -294,7 +292,6 @@
         .btn-sell { background: rgba(255, 51, 102, 0.15); color: var(--neon-red); border: 1px solid rgba(255, 51, 102, 0.3); }
         .btn-withdraw { background: rgba(0, 242, 254, 0.1); color: var(--accent-cyan); border: 1px solid rgba(0, 242, 254, 0.3); }
 
-        /* Апгрейдер */
         .upgrade-core {
             background: var(--bg-card);
             border: 1px solid var(--border-cyber);
@@ -387,7 +384,6 @@
             box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
         }
 
-        /* Модалка рулетки */
         .modal {
             display: none;
             position: fixed;
@@ -523,13 +519,13 @@
         <div class="balance-pill">⚡ <span id="balance">0</span></div>
     </div>
 
-    <!-- 1. КЕЙСИ (Головна сторінка) -->
+    <!-- 1. КЕЙСИ -->
     <div id="tab-cases" class="tab-content active">
         <div class="section-title">🎁 Квантові кейси</div>
         <div class="grid-2" id="cases-grid"></div>
     </div>
 
-    <!-- 1.1 СТОРІНКУ ПЕРЕГЛЯДУ ОКРЕМОГО КЕЙСУ -->
+    <!-- 1.1 СТОРІНКА ПЕРЕГЛЯДУ КЕЙСУ -->
     <div id="tab-case-view" class="tab-content">
         <div class="case-view-header">
             <button class="back-btn" onclick="goBackToCases()">← Назад</button>
@@ -620,7 +616,7 @@
         const JSONBIN_MASTER_KEY = '$2a$10$r59aFeXSztNRaHJLn09.D.cQbC2R/.Zx1wF3MbS9TiIVirYcTzqW2';
 
         let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 9000 + 1000);
-        document.getElementById('username-display'].innerText = '@' + tgUser;
+        document.getElementById('username-display').innerText = '@' + tgUser;
 
         let balance = 100;
         let inventory = [];
@@ -804,7 +800,7 @@
         }
 
         function updateUI() {
-            document.getElementById('balance'].innerText = balance;
+            document.getElementById('balance').innerText = balance;
             renderStore();
             renderInventory();
             renderCases();
@@ -821,7 +817,6 @@
             if(tabId === 'admin') loadCloudData();
         }
 
-        /* Логіка перегляду кейсу та шансів */
         function viewCase(caseId) {
             currentSelectedCase = casesList.find(c => c.id === caseId);
             if (!currentSelectedCase) return;
@@ -875,7 +870,7 @@
         }
 
         function filterStore() {
-            renderStore(document.getElementById('searchInput'].value);
+            renderStore(document.getElementById('searchInput').value);
         }
 
         function buyBrainrot(name, price, icon) {
@@ -953,7 +948,6 @@
 
         function getEligibleItemsForCase(casePrice) {
             if (casePrice >= 5000) {
-                // Шанси на п'ятитисячний кейс: випадають предмети вартістю від 2000 до 3000+
                 return allBrainrots.filter(x => x.price >= 2000);
             } else if (casePrice >= 2500) {
                 return allBrainrots.filter(x => x.price >= 150 && x.price <= 500);
@@ -996,7 +990,6 @@
             let wonItem = getBetterRandomDrop(price);
             let trackHTML = '';
             
-            // Формуємо рулетку, щоб виграшний елемент був чітко під індексом 15 (центр під червоною лінією)
             for (let i = 0; i < 30; i++) {
                 let randItem = (i === 15) ? wonItem : getBetterRandomDrop(price);
                 trackHTML += `<div class="roulette-card">${randItem.icon}<span>${randItem.name}</span></div>`;
@@ -1007,7 +1000,6 @@
 
             setTimeout(() => {
                 track.style.transition = 'left 4s cubic-bezier(0.1, 0.9, 0.2, 1)';
-                // Зміщення на 15 карток по 91px (85px ширина + 6px margin-right) - положення центру
                 track.style.left = '-1305px'; 
             }, 50);
 
@@ -1020,7 +1012,7 @@
         }
 
         function updateSlider(val) {
-            document.getElementById('sliderVal'].innerText = val + '%';
+            document.getElementById('sliderVal').innerText = val + '%';
         }
 
         function updateUpgradeInfo() {
@@ -1043,7 +1035,7 @@
                 return;
             }
 
-            let chance = parseInt(document.getElementById('chanceSlider'].value);
+            let chance = parseInt(document.getElementById('chanceSlider').value);
             let centerIcon = document.getElementById('upgradeCenterIcon');
             
             centerIcon.style.transform = 'scale(1.4) rotate(360deg)';
@@ -1069,7 +1061,7 @@
         }
 
         function activatePromo() {
-            const code = document.getElementById('promo-input'].value.trim().toUpperCase();
+            const code = document.getElementById('promo-input').value.trim().toUpperCase();
             if (activeCodes[code] !== undefined) {
                 balance += activeCodes[code];
                 alert(`Ключ успішно активовано! +${activeCodes[code]} ⚡`);
@@ -1081,7 +1073,7 @@
         }
 
         function checkAdminCode() {
-            const inputVal = document.getElementById('admin-code-input'].value.trim();
+            const inputVal = document.getElementById('admin-code-input').value.trim();
             if (inputVal === '6785431923') {
                 isAdminLoggedIn = true;
                 localStorage.setItem('brainrot_admin_auth', 'true');
@@ -1150,14 +1142,14 @@
         }
 
         function adminCreatePromo() {
-            const name = document.getElementById('new-promo-name'].value.trim().toUpperCase();
-            const sum = parseInt(document.getElementById('new-promo-sum'].value);
+            const name = document.getElementById('new-promo-name').value.trim().toUpperCase();
+            const sum = parseInt(document.getElementById('new-promo-sum').value);
             if (!name || isNaN(sum)) return alert('Заповніть усі параметри!');
             activeCodes[name] = sum;
             saveCloudData();
             alert(`Ключ "${name}" на ${sum}⚡ успішно створено!`);
-            document.getElementById('new-promo-name'].value = '';
-            document.getElementById('new-promo-sum'].value = '';
+            document.getElementById('new-promo-name').value = '';
+            document.getElementById('new-promo-sum').value = '';
         }
 
         loadCloudData();
