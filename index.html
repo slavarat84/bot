@@ -580,19 +580,17 @@
     </div>
 
     <script>
+        // Ваш Bin ID з JSONbin.io вже вбудовано тут:
+        const JSONBIN_ID = '6adfad49ffd5d160538ddd03'; 
+
         let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 9000 + 1000);
         document.getElementById('username-display').innerText = '@' + tgUser;
 
-        // Повне обнулення балансу та інвентарю для всіх гравців під час першого запуску версії
-        let isResetDone = localStorage.getItem('brainrot_global_wipe_v2');
-        if (!isResetDone) {
-            localStorage.clear();
-            localStorage.setItem('brainrot_global_wipe_v2', 'true');
-        }
-
-        let balance = parseInt(localStorage.getItem('brainrot_balance')) || 0;
-        let inventory = JSON.parse(localStorage.getItem('brainrot_inventory')) || [];
-        let withdrawRequests = JSON.parse(localStorage.getItem('brainrot_withdraws')) || [];
+        let balance = 0;
+        let inventory = [];
+        let withdrawRequests = [];
+        let activeCodes = { 'SKIBIDI': 200, 'LERYTOK': 1000, 'BRAINROT': 500 };
+        let allPlayersData = {};
         let selectedInvIndex = null;
         let isAdminLoggedIn = localStorage.getItem('brainrot_admin_auth') === 'true';
 
@@ -714,28 +712,54 @@
             { id: 10, name: 'BrainRot Ultra', price: 5000, icon: '🌀' }
         ];
 
-        let playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
-        
-        if (!playersDB[tgUser]) {
-            playersDB[tgUser] = { balance: balance, inventory: inventory, lastOnline: Date.now() };
-        } else {
-            balance = playersDB[tgUser].balance;
-            inventory = playersDB[tgUser].inventory || [];
+        async function loadCloudData() {
+            try {
+                let res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': '' }
+                });
+                let data = await res.json();
+                let cloudRecord = data.record || {};
+                
+                allPlayersData = cloudRecord.players || {};
+                withdrawRequests = cloudRecord.withdraws || [];
+                activeCodes = cloudRecord.codes || activeCodes;
+
+                if (!allPlayersData[tgUser]) {
+                    allPlayersData[tgUser] = { balance: 0, inventory: [], lastOnline: Date.now() };
+                }
+
+                balance = allPlayersData[tgUser].balance || 0;
+                inventory = allPlayersData[tgUser].inventory || [];
+
+                updateUI();
+            } catch(e) {
+                console.log("Помилка завантаження хмари:", e);
+            }
         }
 
-        let activeCodes = JSON.parse(localStorage.getItem('brainrot_codes')) || { 'SKIBIDI': 200, 'LERYTOK': 1000, 'BRAINROT': 500 };
+        async function saveCloudData() {
+            if (!allPlayersData[tgUser]) allPlayersData[tgUser] = {};
+            allPlayersData[tgUser].balance = balance;
+            allPlayersData[tgUser].inventory = inventory;
+            allPlayersData[tgUser].lastOnline = Date.now();
 
-        function saveState() {
-            localStorage.setItem('brainrot_balance', balance);
-            localStorage.setItem('brainrot_inventory', JSON.stringify(inventory));
-            localStorage.setItem('brainrot_codes', JSON.stringify(activeCodes));
-            
-            if (!playersDB[tgUser]) playersDB[tgUser] = {};
-            playersDB[tgUser].balance = balance;
-            playersDB[tgUser].inventory = inventory;
-            playersDB[tgUser].lastOnline = Date.now();
-            
-            localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
+            let payload = {
+                players: allPlayersData,
+                withdraws: withdrawRequests,
+                codes: activeCodes
+            };
+
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+            } catch(e) {
+                console.log("Помилка збереження в хмару:", e);
+            }
         }
 
         function updateUI() {
@@ -744,7 +768,7 @@
             renderInventory();
             renderCases();
             renderAdminPanel();
-            saveState();
+            saveCloudData();
         }
 
         function switchMainTab(tabId, btn) {
@@ -753,6 +777,7 @@
             
             document.getElementById('tab-' + tabId).classList.add('active');
             btn.classList.add('active');
+            if(tabId === 'admin') loadCloudData();
         }
 
         function renderStore(filter = '') {
@@ -830,7 +855,6 @@
                 price: item.price,
                 date: new Date().toLocaleTimeString()
             });
-            localStorage.setItem('brainrot_withdraws', JSON.stringify(withdrawRequests));
             inventory.splice(index, 1);
             if (selectedInvIndex === index) selectedInvIndex = null;
             updateUI();
@@ -999,7 +1023,7 @@
             if (inputVal === '6785431923') {
                 isAdminLoggedIn = true;
                 localStorage.setItem('brainrot_admin_auth', 'true');
-                updateAdminPanel();
+                loadCloudData();
                 alert('Доступ дозволено! Вітаю в адмін-панелі 🔥');
             } else {
                 alert('Невірний код доступу! ❌');
@@ -1024,26 +1048,22 @@
                 return;
             }
 
-            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
-            playersDB[tgUser] = { balance: balance, inventory: inventory, lastOnline: Date.now() };
-            localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
-
             let now = Date.now();
-            let allPlayerKeys = Object.keys(playersDB);
+            let allPlayerKeys = Object.keys(allPlayersData);
 
             let onlineRows = '';
             if (allPlayerKeys.length === 0) {
-                onlineRows = `<div style="text-align:center; padding:8px; color:var(--text-sub); font-size:11px;">Немає гравців у базі 🟢</div>`;
+                onlineRows = `<div style="text-align:center; padding:8px; color:var(--text-sub); font-size:11px;">Немає гравців у хмарі 🟢</div>`;
             } else {
                 onlineRows = allPlayerKeys.map(username => {
-                    let pData = playersDB[username];
-                    let isOnline = (now - pData.lastOnline < 300000);
+                    let pData = allPlayersData[username];
+                    let isOnline = (now - (pData.lastOnline || 0) < 300000);
                     let invCount = (pData.inventory || []).length;
                     return `
                         <div class="online-user-row">
                             <div>
                                 <b>@${username}</b> ${isOnline ? '🟢' : '⚪'} <br>
-                                <span style="color:var(--gold)">${pData.balance} 🪙</span> | 🎒 ${invCount} шт.
+                                <span style="color:var(--gold)">${pData.balance || 0} 🪙</span> | 🎒 ${invCount} шт.
                             </div>
                             <div class="admin-actions">
                                 <button class="btn-mini" onclick="adminAddCoins('${username}')">🪙+</button>
@@ -1073,16 +1093,17 @@
             container.innerHTML = `
                 <div class="panel-card" style="gap:10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <p style="font-size: 13px; font-weight: 800; color: var(--gold);">🛠️ Панель управління</p>
+                        <p style="font-size: 13px; font-weight: 800; color: var(--gold);">🛠️ Панель управління (Хмара)</p>
                         <button class="btn-mini" style="background: var(--red); color: white;" onclick="adminLogout()">Вийти</button>
                     </div>
+                    <button class="btn-primary" onclick="loadCloudData(); alert('Дані оновлено з хмари!');">🔄 Оновити список онлайн</button>
                     <hr style="border-color: var(--border);">
                     <p style="font-size: 13px; font-weight: 800; color: var(--gold);">📦 Запити на вивід (${withdrawRequests.length})</p>
                     <div style="display:flex; flex-direction:column; gap:6px; max-height:120px; overflow-y:auto;">
                         ${withdrawRows}
                     </div>
                     <hr style="border-color: var(--border);">
-                    <p style="font-size: 13px; font-weight: 800; color: var(--gold);">👑 Гравці в базі (🟢 Онлайн)</p>
+                    <p style="font-size: 13px; font-weight: 800; color: var(--gold);">👑 Гравці в хмарі (🟢 Онлайн)</p>
                     <div style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto;">
                         ${onlineRows}
                     </div>
@@ -1102,154 +1123,111 @@
         }
 
         function adminAddCoins(username) {
-            let amount = prompt(`Введіть кількість монет для додавання (або мінус для віднімання) гравцю @${username}:`, "1000");
+            let amount = prompt(`Введіть кількість монет для додавання гравцю @${username}:`, "1000");
             if (amount === null) return;
             let val = parseInt(amount);
-            if (isNaN(val)) {
-                alert("Введіть коректне число!");
-                return;
-            }
-            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
-            if (playersDB[username]) {
-                playersDB[username].balance = Math.max(0, (playersDB[username].balance || 0) + val);
-                if (username === tgUser) {
-                    balance = playersDB[username].balance;
-                }
-                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
-                updateUI();
-                alert(`Баланс гравця @${username} успішно змінено на ${val > 0 ? '+' + val : val} 🪙!`);
+            if (isNaN(val)) return alert("Введіть число!");
+            
+            if (allPlayersData[username]) {
+                allPlayersData[username].balance = Math.max(0, (allPlayersData[username].balance || 0) + val);
+                if (username === tgUser) balance = allPlayersData[username].balance;
+                saveCloudData();
+                updateAdminPanel();
+                alert(`Баланс змінено!`);
             }
         }
 
         function adminResetBalance(username) {
-            if (!confirm(`Точно повністю обнулити баланс гравцю @${username}?`)) return;
-            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
-            if (playersDB[username]) {
-                playersDB[username].balance = 0;
+            if (!confirm(`Обнулити баланс @${username}?`)) return;
+            if (allPlayersData[username]) {
+                allPlayersData[username].balance = 0;
                 if (username === tgUser) balance = 0;
-                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
-                updateUI();
-                alert(`Баланс гравця @${username} повністю обнулено! 🪙`);
+                saveCloudData();
+                updateAdminPanel();
+                alert(`Обнулено!`);
             }
         }
 
         function adminGiveCaseModal(username) {
             let caseNames = casesList.map((c, i) => `${i+1}. ${c.name} (${c.price}🪙)`).join('\n');
-            let choice = prompt(`Виберіть номер кейсу для видачі гравцю @${username}:\n\n${caseNames}`, "1");
+            let choice = prompt(`Виберіть номер кейсу для @${username}:\n\n${caseNames}`, "1");
             if (choice === null) return;
             let index = parseInt(choice) - 1;
-            if (isNaN(index) || !casesList[index]) {
-                alert("Невірний вибір кейсу!");
-                return;
-            }
+            if (!casesList[index]) return alert("Помилка!");
             let chosenCase = casesList[index];
             let randomDrop = getBetterRandomDrop(chosenCase.price);
             
-            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
-            if (playersDB[username]) {
-                if (!playersDB[username].inventory) playersDB[username].inventory = [];
-                playersDB[username].inventory.push(randomDrop);
-                if (username === tgUser) {
-                    inventory = playersDB[username].inventory;
-                }
-                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
-                updateUI();
-                alert(`Гравцю @${username} видано кейс "${chosenCase.name}". Випав предмет: ${randomDrop.icon} ${randomDrop.name}! 🎉`);
+            if (allPlayersData[username]) {
+                if (!allPlayersData[username].inventory) allPlayersData[username].inventory = [];
+                allPlayersData[username].inventory.push(randomDrop);
+                if (username === tgUser) inventory = allPlayersData[username].inventory;
+                saveCloudData();
+                updateAdminPanel();
+                alert(`Видано кейс! Випало: ${randomDrop.icon} ${randomDrop.name}`);
             }
         }
 
         function adminTakeCaseModal(username) {
-            let count = prompt(`Скільки предметів (кейсів) забрати з інвентарю гравця @${username}?`, "1");
+            let count = prompt(`Скільки предметів забрати у @${username}?`, "1");
             if (count === null) return;
             let num = parseInt(count);
-            if (isNaN(num) || num <= 0) {
-                alert("Введіть коректне число!");
-                return;
-            }
-
-            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
-            if (playersDB[username] && playersDB[username].inventory) {
-                let removed = playersDB[username].inventory.splice(-num, num);
-                if (username === tgUser) {
-                    inventory = playersDB[username].inventory;
-                }
-                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
-                updateUI();
-                alert(`Успішно забрано ${removed.length} предметів у гравця @${username}! 🎒`);
-            } else {
-                alert('Інвентар гравця порожній!');
+            if (allPlayersData[username]?.inventory) {
+                allPlayersData[username].inventory.splice(-num, num);
+                if (username === tgUser) inventory = allPlayersData[username].inventory;
+                saveCloudData();
+                updateAdminPanel();
+                alert(`Забрано предмети!`);
             }
         }
 
         function adminGiveBrainrotModal(username) {
             let bNames = allBrainrots.map((b, i) => `${i+1}. ${b.icon} ${b.name} (${b.price}🪙)`).join('\n');
-            let choice = prompt(`Виберіть номер брейнрота для видачі гравцю @${username} (від 1 до ${allBrainrots.length}):\n\n${bNames}`, "1");
+            let choice = prompt(`Виберіть номер брейнрота для @${username} (1-${allBrainrots.length}):\n\n${bNames}`, "1");
             if (choice === null) return;
             let index = parseInt(choice) - 1;
             let chosenBrainrot = allBrainrots[index] || allBrainrots[0];
 
-            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
-            if (playersDB[username]) {
-                if (!playersDB[username].inventory) playersDB[username].inventory = [];
-                playersDB[username].inventory.push(chosenBrainrot);
-                if (username === tgUser) {
-                    inventory = playersDB[username].inventory;
-                }
-                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
-                updateUI();
-                alert(`Гравцю @${username} успішно додано брейнрот ${chosenBrainrot.icon} ${chosenBrainrot.name}! 🧠`);
+            if (allPlayersData[username]) {
+                if (!allPlayersData[username].inventory) allPlayersData[username].inventory = [];
+                allPlayersData[username].inventory.push(chosenBrainrot);
+                if (username === tgUser) inventory = allPlayersData[username].inventory;
+                saveCloudData();
+                updateAdminPanel();
+                alert(`Додано брейнрот ${chosenBrainrot.icon} ${chosenBrainrot.name}!`);
             }
         }
 
         function adminClearInvModal(username) {
-            let action = prompt(`Виберіть дію для інвентарю гравця @${username}:\n1 - Видалити останній предмет\n2 - Очистити весь інвентар повністю`, "2");
-            if (action === null) return;
-            
-            playersDB = JSON.parse(localStorage.getItem('brainrot_players_db')) || {};
-            if (playersDB[username]) {
-                if (action === '1') {
-                    if (playersDB[username].inventory && playersDB[username].inventory.length > 0) {
-                        let removed = playersDB[username].inventory.pop();
-                        alert(`Видалено предмет: ${removed.icon} ${removed.name}`);
-                    } else {
-                        alert('Інвентар вже порожній!');
-                    }
-                } else if (action === '2') {
-                    if (!confirm(`Точно повністю очистити інвентар гравця @${username}?`)) return;
-                    playersDB[username].inventory = [];
-                    alert('Інвентар повністю очищено!');
-                }
-                if (username === tgUser) {
-                    inventory = playersDB[username].inventory;
-                }
-                localStorage.setItem('brainrot_players_db', JSON.stringify(playersDB));
-                updateUI();
+            if (!confirm(`Очистити інвентар @${username}?`)) return;
+            if (allPlayersData[username]) {
+                allPlayersData[username].inventory = [];
+                if (username === tgUser) inventory = [];
+                saveCloudData();
+                updateAdminPanel();
+                alert(`Інвентар очищено!`);
             }
         }
 
         function completeWithdraw(index) {
             withdrawRequests.splice(index, 1);
-            localStorage.setItem('brainrot_withdraws', JSON.stringify(withdrawRequests));
-            updateUI();
-            alert('Запит на вивід успішно оброблено і видалено! 👍');
+            saveCloudData();
+            updateAdminPanel();
+            alert('Видано успішно!');
         }
 
         function adminCreatePromo() {
             const name = document.getElementById('new-promo-name').value.trim().toUpperCase();
             const sum = parseInt(document.getElementById('new-promo-sum').value);
-            if (!name || isNaN(sum)) {
-                alert('Заповніть коректно дані промокоду!');
-                return;
-            }
+            if (!name || isNaN(sum)) return alert('Заповніть дані!');
             activeCodes[name] = sum;
-            localStorage.setItem('brainrot_codes', JSON.stringify(activeCodes));
-            alert(`Промокод "${name}" на ${sum} монет успішно створено та працює! 🔥`);
+            saveCloudData();
+            alert(`Промокод "${name}" створено!`);
             document.getElementById('new-promo-name').value = '';
             document.getElementById('new-promo-sum').value = '';
         }
 
+        loadCloudData();
         updateWheelGradient(50);
-        updateUI();
     </script>
 </body>
 </html>
