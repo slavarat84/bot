@@ -851,11 +851,9 @@
             `).join('');
         }
 
-        // ПОКРАЩЕНА СИСТЕМА ШАНСІВ (DROP SYSTEM) ДЛЯ КЕЙСІВ
         function getBetterRandomDrop(casePrice) {
-            // Чим дорожчий кейс, тим вищий мінімальний поріг вартості предмета, що випадає
             let minPrice = 0;
-            if (casePrice >= 5000) minPrice = 180; // Ultra кейс дає тільки топові предмети від 180 монет
+            if (casePrice >= 5000) minPrice = 180;
             else if (casePrice >= 2500) minPrice = 130;
             else if (casePrice >= 1200) minPrice = 90;
             else if (casePrice >= 750) minPrice = 70;
@@ -866,7 +864,6 @@
             let eligibleItems = allBrainrots.filter(x => x.price >= minPrice);
             if (eligibleItems.length === 0) eligibleItems = allBrainrots;
 
-            // Збільшуємо шанс на рідкісні предмети
             let roll = Math.random() * 100;
             let rares = eligibleItems.filter(x => x.rarity === 'rare');
             if (roll < 15 && rares.length > 0) {
@@ -943,7 +940,6 @@
         function spinWheel() {
             if (selectedInvIndex === null || !inventory[selectedInvIndex]) {
                 alert('Спочатку виберіть предмет у вкладці "Інвентар"!');
-                switchSubTab('inventory', document.querySelectorAll('.nav-item')[2]);
                 return;
             }
 
