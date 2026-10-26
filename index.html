@@ -391,8 +391,8 @@
             color: var(--red);
             font-weight: 900;
             text-align: center;
-            padding: 30px;
-            font-size: 16px;
+            padding: 20px;
+            font-size: 14px;
         }
 
         .modal {
@@ -497,10 +497,6 @@
         .nav-item div {
             font-size: 18px;
         }
-
-        .admin-only-btn {
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -508,7 +504,7 @@
     <div class="header">
         <div>
             <div class="brand-title">🔥 Brainrot Battle</div>
-            <div class="brand-user" id="username-display">@lerytok</div>
+            <div class="brand-user" id="username-display">@player</div>
         </div>
         <div class="balance-box">🪙 <span id="balance">0</span></div>
     </div>
@@ -564,7 +560,7 @@
         </div>
     </div>
 
-    <!-- 6. АДМІН-ПАНЕЛЬ (ЗАХИЩЕНА) -->
+    <!-- 6. АДМІН-ПАНЕЛЬ (ЗАХИЩЕНА КОДОМ) -->
     <div id="tab-admin" class="tab-content">
         <div class="section-title">🛠️ Адмін-Панель</div>
         <div id="admin-panel-container"></div>
@@ -588,27 +584,20 @@
         <button class="nav-item" onclick="switchMainTab('inventory', this)"><div>🎒</div>Інвентар</button>
         <button class="nav-item" onclick="switchMainTab('upgrade', this)"><div>⚡</div>Апгрейд</button>
         <button class="nav-item" onclick="switchMainTab('promo', this)"><div>🎟️</div>Промо</button>
-        <button class="nav-item admin-only-btn" id="admin-nav-btn" onclick="switchMainTab('admin', this)"><div>🛠️</div>Адмін</button>
+        <button class="nav-item" onclick="switchMainTab('admin', this)"><div>🛠️</div>Адмін</button>
     </div>
 
     <script>
-        // Жорстка перевірка юзернейму з урахуванням веб-режиму
-        let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username;
-        if (!tgUser) {
-            tgUser = 'lerytok'; // За замовчуванням для тебе, якщо Telegram не передав дані
-        }
-        
+        let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 1000);
         document.getElementById('username-display').innerText = '@' + tgUser;
-
-        // Кнопка адміна з'являється ТІЛЬКИ якщо юзернейм точно 'lerytok'
-        if (tgUser === 'lerytok') {
-            document.getElementById('admin-nav-btn').style.display = 'flex';
-        }
 
         let balance = parseInt(localStorage.getItem('brainrot_balance')) || 0;
         let inventory = JSON.parse(localStorage.getItem('brainrot_inventory')) || [];
         let withdrawRequests = JSON.parse(localStorage.getItem('brainrot_withdraws')) || [];
         let selectedInvIndex = null;
+        
+        // Зберігаємо статус чи адмін авторизований
+        let isAdminLoggedIn = localStorage.getItem('brainrot_admin_auth') === 'true';
 
         const allBrainrots = [
             { icon: '🔴', name: 'Cursed Slap', price: 13, rarity: 'rare' },
@@ -760,12 +749,6 @@
         }
 
         function switchMainTab(tabId, btn) {
-            // Суворий захист на рівні перемикання вкладок
-            if (tabId === 'admin' && tgUser !== 'lerytok') {
-                alert('ДОСТУП ЗАБОРОНЕНО!');
-                return;
-            }
-
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             
@@ -1011,12 +994,35 @@
             }
         }
 
+        // Перевірка коду для адмінки
+        function checkAdminCode() {
+            const inputVal = document.getElementById('admin-code-input').value.trim();
+            if (inputVal === '6785431923') {
+                isAdminLoggedIn = true;
+                localStorage.setItem('brainrot_admin_auth', 'true');
+                updateAdminPanel();
+                alert('Доступ дозволено! Вітаю в адмін-панелі 🔥');
+            } else {
+                alert('Невірний код доступу! ❌');
+            }
+        }
+
         function renderAdminPanel() {
+            updateAdminPanel();
+        }
+
+        function updateAdminPanel() {
             const container = document.getElementById('admin-panel-container');
             
-            // Сувора перевірка: якщо не lerytok, блокуємо рендер адмінки
-            if (tgUser !== 'lerytok') {
-                container.innerHTML = `<div class="access-denied">ДОСТУП ЗАБОРОНЕНО ❌</div>`;
+            // Якщо не авторизований — показуємо форму вводу коду
+            if (!isAdminLoggedIn) {
+                container.innerHTML = `
+                    <div class="panel-card" style="text-align: center; gap: 12px; padding: 20px;">
+                        <p style="font-size: 13px; color: var(--text-sub);">Введіть секретний код для адмін-доступу:</p>
+                        <input type="password" id="admin-code-input" class="input-field" placeholder="Введіть код..." style="text-align: center;">
+                        <button class="btn-primary" onclick="checkAdminCode()">Увійти в адмінку 🔓</button>
+                    </div>
+                `;
                 return;
             }
 
@@ -1053,7 +1059,12 @@
 
             container.innerHTML = `
                 <div class="panel-card" style="gap:10px;">
-                    <p style="font-size: 13px; font-weight: 800; color: var(--gold);">📦 Запити на вивід предметів (${withdrawRequests.length})</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <p style="font-size: 13px; font-weight: 800; color: var(--gold);">🛠️ Панель управління</p>
+                        <button class="btn-mini" style="background: var(--red); color: white;" onclick="adminLogout()">Вийти</button>
+                    </div>
+                    <hr style="border-color: var(--border);">
+                    <p style="font-size: 13px; font-weight: 800; color: var(--gold);">📦 Запити на вивід (${withdrawRequests.length})</p>
                     <div style="display:flex; flex-direction:column; gap:6px; max-height:140px; overflow-y:auto;">
                         ${withdrawRows}
                     </div>
@@ -1071,8 +1082,14 @@
             `;
         }
 
+        function adminLogout() {
+            isAdminLoggedIn = false;
+            localStorage.removeItem('brainrot_admin_auth');
+            updateAdminPanel();
+        }
+
         function adminResetBalance(username) {
-            if (tgUser !== 'lerytok') return;
+            if (!isAdminLoggedIn) return;
             if (!confirm(`Точно обнулити баланс гравцю @${username}?`)) return;
             let p = activePlayers.find(x => x.username === username);
             if (p) {
@@ -1085,7 +1102,7 @@
         }
 
         function adminClearInventory(username) {
-            if (tgUser !== 'lerytok') return;
+            if (!isAdminLoggedIn) return;
             if (!confirm(`Точно очистити всі брейнроти у гравця @${username}?`)) return;
             let p = activePlayers.find(x => x.username === username);
             if (p) {
@@ -1100,7 +1117,7 @@
         }
 
         function completeWithdraw(index) {
-            if (tgUser !== 'lerytok') return;
+            if (!isAdminLoggedIn) return;
             withdrawRequests.splice(index, 1);
             localStorage.setItem('brainrot_withdraws', JSON.stringify(withdrawRequests));
             updateUI();
@@ -1108,7 +1125,7 @@
         }
 
         function adminCustomCoins(username) {
-            if (tgUser !== 'lerytok') return;
+            if (!isAdminLoggedIn) return;
             let amount = prompt(`Введіть кількість монет для додавання (або мінус для зняття) гравцю @${username}:`, "100");
             if (amount === null) return;
             let val = parseInt(amount);
@@ -1127,7 +1144,7 @@
         }
 
         function adminGiveCase(username) {
-            if (tgUser !== 'lerytok') return;
+            if (!isAdminLoggedIn) return;
             let caseNames = casesList.map((c, i) => `${i+1}. ${c.name} (${c.price}🪙)`).join('\n');
             let choice = prompt(`Виберіть номер кейсу для видачі гравцю @${username}:\n\n${caseNames}`, "1");
             if (choice === null) return;
@@ -1146,7 +1163,7 @@
         }
 
         function adminCreatePromo() {
-            if (tgUser !== 'lerytok') return;
+            if (!isAdminLoggedIn) return;
             const name = document.getElementById('new-promo-name').value.trim().toUpperCase();
             const sum = parseInt(document.getElementById('new-promo-sum').value);
             if (!name || isNaN(sum)) {
