@@ -636,18 +636,18 @@
         let currentSelectedCase = null;
         let isAdminLoggedIn = localStorage.getItem('brainrot_admin_auth') === 'true';
 
-        // Перші 10 брейнротів із твоїх завантажених фотографій (без фону) та решта бази
+        // Перші 10 брейндродів без фону + решта бази
         const allBrainrots = [
-            { image: 'https://i.ibb.co/3s6c7G3/los-trios.png', name: 'Los Trios', price: 4 },[cite: 4]
-            { image: 'https://i.ibb.co/68XwzV9/67.png', name: '67', price: 5 },[cite: 5]
-            { image: 'https://i.ibb.co/7jP204n/spinny-hammy.png', name: 'Spinny Hammy', price: 6 },[cite: 6]
-            { image: 'https://i.ibb.co/0V8fB9W/arcadopus.png', name: 'Arcadopus', price: 7 },[cite: 7]
-            { image: 'https://i.ibb.co/422369S/candy-slap.png', name: 'Candy Slap', price: 7 },[cite: 8]
-            { image: 'https://i.ibb.co/8991D4d/los-noobinis.png', name: 'Los Noobinis', price: 7 },[cite: 9]
-            { image: 'https://i.ibb.co/7X1hG40/tang-tang.png', name: 'Tang Tang Keletang', price: 8 },[cite: 10]
-            { image: 'https://i.ibb.co/9v3K08g/la-grande.png', name: 'La Grande', price: 9 },[cite: 11]
-            { image: 'https://i.ibb.co/2k4wQ8x/divine-slap.png', name: 'Divine Slap', price: 9 },[cite: 12]
-            { image: 'https://i.ibb.co/1t7G36N/tictac-sahur.png', name: 'Tictac Sahur', price: 12 },[cite: 13]
+            { image: 'https://i.ibb.co/3s6c7G3/los-trios.png', name: 'Los Trios', price: 4 },
+            { image: 'https://i.ibb.co/68XwzV9/67.png', name: '67', price: 5 },
+            { image: 'https://i.ibb.co/7jP204n/spinny-hammy.png', name: 'Spinny Hammy', price: 6 },
+            { image: 'https://i.ibb.co/0V8fB9W/arcadopus.png', name: 'Arcadopus', price: 7 },
+            { image: 'https://i.ibb.co/422369S/candy-slap.png', name: 'Candy Slap', price: 7 },
+            { image: 'https://i.ibb.co/8991D4d/los-noobinis.png', name: 'Los Noobinis', price: 7 },
+            { image: 'https://i.ibb.co/7X1hG40/tang-tang.png', name: 'Tang Tang Keletang', price: 8 },
+            { image: 'https://i.ibb.co/9v3K08g/la-grande.png', name: 'La Grande', price: 9 },
+            { image: 'https://i.ibb.co/2k4wQ8x/divine-slap.png', name: 'Divine Slap', price: 9 },
+            { image: 'https://i.ibb.co/1t7G36N/tictac-sahur.png', name: 'Tictac Sahur', price: 12 },
             { name: 'Bacuru and Egguru', price: 12, image: 'https://via.placeholder.com/80/00f2fe/030407?text=Bacuru' },
             { name: 'Los 67', price: 12, image: 'https://via.placeholder.com/80/00f2fe/030407?text=Los67' },
             { name: 'Cursed Slap', price: 12, image: 'https://via.placeholder.com/80/00f2fe/030407?text=CursedSlap' },
