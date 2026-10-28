@@ -569,16 +569,24 @@
     </div>
 
     <script>
-        let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 9000 + 1000);
+        // Стабільна ідентифікація користувача для збереження
+        let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username;
+        if (!tgUser) {
+            tgUser = localStorage.getItem('br_fallback_user');
+            if (!tgUser) {
+                tgUser = 'player_' + Math.floor(Math.random() * 90000 + 10000);
+                localStorage.setItem('br_fallback_user', tgUser);
+            }
+        }
         document.getElementById('username-display').innerText = '@' + tgUser;
 
-        // Збереження особистих даних гравця
+        // Потужне збереження особистих даних гравця
         let balance = parseInt(localStorage.getItem('br_balance_' + tgUser)) || 0;
         let inventory = JSON.parse(localStorage.getItem('br_inv_' + tgUser)) || [];
         let withdrawRequests = JSON.parse(localStorage.getItem('br_withdraws')) || [];
         let lastFreeCaseTime = parseInt(localStorage.getItem('br_free_case_' + tgUser)) || 0;
 
-        // Промокоди тепер глобальні (загальні для всіх гравців)
+        // Загальні промокоди для всіх
         let activeCodes = JSON.parse(localStorage.getItem('br_global_codes')) || { 
             'START': { reward: 100, uses: 100 }, 
             'BONUS': { reward: 250, uses: 50 } 
@@ -742,7 +750,6 @@
             localStorage.setItem('br_balance_' + tgUser, balance);
             localStorage.setItem('br_inv_' + tgUser, JSON.stringify(inventory));
             localStorage.setItem('br_withdraws', JSON.stringify(withdrawRequests));
-            localStorage.setItem('br_global_codes', JSON.stringify(activeCodes));
             localStorage.setItem('br_free_case_' + tgUser, lastFreeCaseTime);
         }
 
@@ -1086,7 +1093,6 @@
                 return;
             }
 
-            // Оновлюємо дані глобальних промокодів перед перевіркою
             activeCodes = JSON.parse(localStorage.getItem('br_global_codes')) || activeCodes;
 
             if (activeCodes[code] !== undefined) {
@@ -1105,7 +1111,6 @@
                         delete activeCodes[code];
                     }
 
-                    // Зберігаємо зміни у глобальне сховище
                     localStorage.setItem('br_global_codes', JSON.stringify(activeCodes));
 
                     codeInput.value = '';
