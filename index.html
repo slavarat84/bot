@@ -304,7 +304,6 @@
             overflow: hidden;
         }
 
-        /* Текстове повідомлення всередині апгрейдера замість поп-апів */
         .upgrade-status-text {
             font-size: 12px;
             font-weight: 800;
@@ -519,7 +518,6 @@
                 </div>
             </div>
 
-            <!-- Текст результату всередині екрану програми -->
             <div class="upgrade-status-text" id="upgradeStatusText">Оберіть шанс та крутіть колесо</div>
 
             <div class="slider-box">
@@ -574,19 +572,22 @@
         let tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user?.username || 'player_' + Math.floor(Math.random() * 9000 + 1000);
         document.getElementById('username-display').innerText = '@' + tgUser;
 
+        // Збереження особистих даних гравця
         let balance = parseInt(localStorage.getItem('br_balance_' + tgUser)) || 0;
         let inventory = JSON.parse(localStorage.getItem('br_inv_' + tgUser)) || [];
         let withdrawRequests = JSON.parse(localStorage.getItem('br_withdraws')) || [];
-        let activeCodes = JSON.parse(localStorage.getItem('br_codes')) || { 
-            'START': { reward: 100, uses: 10 }, 
-            'BONUS': { reward: 250, uses: 5 } 
-        };
         let lastFreeCaseTime = parseInt(localStorage.getItem('br_free_case_' + tgUser)) || 0;
+
+        // Промокоди тепер глобальні (загальні для всіх гравців)
+        let activeCodes = JSON.parse(localStorage.getItem('br_global_codes')) || { 
+            'START': { reward: 100, uses: 100 }, 
+            'BONUS': { reward: 250, uses: 50 } 
+        };
 
         let selectedInvIndex = null;
         let currentCase = null;
         let isAdminLoggedIn = localStorage.getItem('br_admin') === 'true';
-        let currentWheelRotation = 0; // Накопичувальний кут обертання для плавного руху завжди вперед
+        let currentWheelRotation = 0;
 
         const allBrainrots = [
             { name: 'Los Trios', price: 4, emoji: '🐱' },
@@ -741,7 +742,7 @@
             localStorage.setItem('br_balance_' + tgUser, balance);
             localStorage.setItem('br_inv_' + tgUser, JSON.stringify(inventory));
             localStorage.setItem('br_withdraws', JSON.stringify(withdrawRequests));
-            localStorage.setItem('br_codes', JSON.stringify(activeCodes));
+            localStorage.setItem('br_global_codes', JSON.stringify(activeCodes));
             localStorage.setItem('br_free_case_' + tgUser, lastFreeCaseTime);
         }
 
@@ -1020,7 +1021,6 @@
             }
         }
 
-        // Ідеальний апгрейдер: крутиться плавно вперед, чітка математика та виведення тексту без алертів
         function spinUpgrade() {
             if (selectedInvIndex === null || !inventory[selectedInvIndex]) {
                 alert('Оберіть предмет у сховищі для апгрейду!');
@@ -1036,18 +1036,13 @@
             statusText.innerText = 'Крутимо колесо... 🔄';
             statusText.style.color = 'var(--accent)';
 
-            // Визначаємо заздалегідь результат за чесною математикою
             let roll = Math.floor(Math.random() * 100) + 1;
             let isWin = (roll <= chance);
 
-            // Розраховуємо градуси зупинки так, щоб стрілка вгорі (0°) вказувала на потрібний сектор
-            // Зелений сектор: від 0° до (chance * 3.6)°
-            // Червоний сектор: від (chance * 3.6)° до 360°
             let targetDegreeWithinCircle = isWin 
-                ? Math.floor(Math.random() * (chance * 3.6 - 10)) + 5 // Зупинка всередині зеленого
-                : Math.floor(Math.random() * ((360 - chance * 3.6) - 10)) + (chance * 3.6) + 5; // Зупинка всередині червоного
+                ? Math.floor(Math.random() * (chance * 3.6 - 10)) + 5 
+                : Math.floor(Math.random() * ((360 - chance * 3.6) - 10)) + (chance * 3.6) + 5;
 
-            // Завжди крутимо вперед на 4-5 повних обертів (1440° / 1800°) плюс додатковий кут до цілі
             currentWheelRotation += 1440 + (360 - targetDegreeWithinCircle);
             wheelBox.style.transform = `rotate(${currentWheelRotation}deg)`;
 
@@ -1091,6 +1086,9 @@
                 return;
             }
 
+            // Оновлюємо дані глобальних промокодів перед перевіркою
+            activeCodes = JSON.parse(localStorage.getItem('br_global_codes')) || activeCodes;
+
             if (activeCodes[code] !== undefined) {
                 let promoData = activeCodes[code];
                 
@@ -1107,12 +1105,15 @@
                         delete activeCodes[code];
                     }
 
+                    // Зберігаємо зміни у глобальне сховище
+                    localStorage.setItem('br_global_codes', JSON.stringify(activeCodes));
+
                     codeInput.value = '';
                     alert(`Промокод успішно активовано! +${promoData.reward} 🪙`);
                     updateUI();
                 } else {
                     delete activeCodes[code];
-                    saveData();
+                    localStorage.setItem('br_global_codes', JSON.stringify(activeCodes));
                     alert('Ліміт активацій цього промокоду вичерпано! ❌');
                 }
             } else {
@@ -1176,8 +1177,8 @@
             if (!name || isNaN(sum) || isNaN(uses)) return alert('Заповніть усі поля!');
             
             activeCodes[name] = { reward: sum, uses: uses };
-            saveData();
-            alert(`Промокод "${name}" на ${sum}🪙 (активацій: ${uses}) успішно створено!`);
+            localStorage.setItem('br_global_codes', JSON.stringify(activeCodes));
+            alert(`Промокод "${name}" на ${sum}🪙 (активацій: ${uses}) успішно створено для всіх гравців!`);
             
             document.getElementById('new-code-name').value = '';
             document.getElementById('new-code-sum').value = '';
